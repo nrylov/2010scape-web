@@ -97,8 +97,11 @@ export async function createApp(config: Config = {}) {
     try {
       if (path === "/healthz") return Response.json({ status: "ok" });
       if (path === "/readyz") {
-        await store.sql`SELECT 1`;
-        return Response.json({ status: "ready" });
+        const ready = await store.ready();
+        return Response.json(
+          { status: ready ? "ready" : "unavailable" },
+          { status: ready ? 200 : 503 },
+        );
       }
       if (req.method === "GET" && path === "/style.css")
         return new Response(
@@ -277,7 +280,9 @@ export async function createApp(config: Config = {}) {
                 editor(
                   auth.csrf,
                   row,
-                  error instanceof ValidationError ? error.message : "Unable to save. Please try again.",
+                  error instanceof ValidationError
+                    ? error.message
+                    : "Unable to save. Please try again.",
                 ),
                 400,
               );

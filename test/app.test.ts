@@ -47,6 +47,73 @@ async function login(a: Awaited<ReturnType<typeof createApp>>) {
   return { cookie, csrf: csrf(await admin.text()), initial };
 }
 describe("website", () => {
+  test("readiness bounds an outage, shares and cancels probes, and recovers without affecting liveness", async () => {
+    const a = await app();
+    const sql = a.store.sql;
+    let queries = 0,
+      cancellations = 0;
+    let rejectQuery!: (error: Error) => void;
+    const pending = new Promise((_, reject) => {
+      rejectQuery = reject;
+    });
+    const query = Object.assign(pending, {
+      cancel() {
+        cancellations++;
+        rejectQuery(new Error("Probe cancelled"));
+      },
+    });
+    a.store.sql = (() => {
+      queries++;
+      return query;
+    }) as unknown as typeof sql;
+    try {
+      const started = performance.now();
+      const probes = Array.from({ length: 12 }, () =>
+        a.handle(request("/readyz")),
+      );
+      expect((await a.handle(request("/healthz"))).status).toBe(200);
+      expect(queries).toBe(1);
+      const responses = await Promise.all(probes);
+      expect(performance.now() - started).toBeLessThan(2600);
+      expect(responses.every((response) => response.status === 503)).toBe(true);
+      expect(await responses[0]!.json()).toEqual({ status: "unavailable" });
+      expect(cancellations).toBe(1);
+      expect(queries).toBe(1);
+      expect((await a.handle(request("/healthz"))).status).toBe(200);
+    } finally {
+      a.store.sql = sql;
+    }
+    // Cancellation must settle before a fresh probe uses the recovered database.
+    await Promise.resolve();
+    expect((await a.handle(request("/readyz"))).status).toBe(200);
+  });
+
+  test("a driver that stalls cancellation cannot accumulate readiness queries", async () => {
+    const a = await app();
+    const sql = a.store.sql;
+    let queries = 0;
+    let resolveQuery!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      resolveQuery = resolve;
+    });
+    const query = Object.assign(pending, { cancel() {} });
+    a.store.sql = (() => {
+      queries++;
+      return query;
+    }) as unknown as typeof sql;
+    try {
+      expect(await a.store.ready(20)).toBe(false);
+      expect(await a.store.ready(20)).toBe(false);
+      expect(await a.store.ready(20)).toBe(false);
+      expect(queries).toBe(1);
+      resolveQuery();
+      await Promise.resolve();
+      await Promise.resolve();
+    } finally {
+      a.store.sql = sql;
+    }
+    expect(await a.store.ready()).toBe(true);
+  });
   test("public pages are usable without credentials, assets, status or downloads", async () => {
     const a = await app({ adminPassword: undefined });
     for (const path of ["/", "/news", "/play", "/status"]) {

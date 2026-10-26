@@ -9,6 +9,16 @@ The website and RuneScape world are separate services with different scaling and
 | Game cache/JS5 | Existing HTTP service on port 43595 and game-protocol requests | Locally supplied cache/assets and keys | Separate endpoint; cache files can be read-only |
 | Database | PostgreSQL protocol | Database-managed persistent storage and backups | Managed independently of website replicas |
 
+## OrbStack test layout and the future browser client
+
+The local test cluster is OrbStack (`kubectl --context orbstack`). Start with one website pod and one authoritative game-world pod, each behind its own Service. A PostgreSQL service or managed database stores website content; game saves need their own persistent volume. The supplied web base defaults to two replicas to exercise shared sessions, but a local overlay can use one website replica.
+
+A browser downloads the website/client over HTTPS, then opens its game connection to a browser-accessible hostname, not a pod IP or Kubernetes service DNS name. A browser cannot open the original game's raw TCP socket. The future TypeScript client will therefore need a secure WebSocket endpoint, either implemented in the server or supplied by a gateway that forwards the game's stream to the internal game Service. If supplied as a separate gateway, it can be another workload or a sidecar; the authoritative game process still remains singular.
+
+Expose the website through HTTP Ingress and the future WebSocket endpoint through an Ingress/controller that supports connection upgrades and long-lived connections. Keep the original Java client's TCP port exposed separately when it is needed. Serving the website over HTTPS requires secure `wss://` game connections to avoid mixed-content blocking. Configure the public game endpoint independently of internal pod addresses, with the appropriate origin checks and connection limits.
+
+No browser client or WebSocket gateway is implemented by these website manifests. The current Java client continues to use the RuneScape TCP connection.
+
 ## Website replicas
 
 All website replicas must use the same PostgreSQL database and administrator configuration. Opaque sessions and CSRF state are database-backed; a request can reach a different pod after login. The readiness endpoint runs `SELECT 1`, while liveness remains independent of database availability. Startup schema creation is coordinated by the application.

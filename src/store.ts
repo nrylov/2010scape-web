@@ -13,8 +13,65 @@ export class ValidationError extends Error {}
 
 export class Store {
   sql: SQL;
+  private readonly postgres: boolean;
+  private readinessFlight?: Promise<boolean>;
   constructor(url: string) {
-    this.sql = new SQL(url);
+    this.postgres = /^postgres(?:ql)?:/.test(url);
+    this.sql = this.postgres
+      ? new SQL(url, { connectionTimeout: 2 })
+      : new SQL(url);
+  }
+  /** One bounded probe per process, even when Kubernetes sends overlapping probes. */
+  ready(timeoutMs = 2000): Promise<boolean> {
+    if (this.readinessFlight) return this.readinessFlight;
+    const controller = new AbortController();
+    let reserved: Awaited<ReturnType<SQL["reserve"]>> | undefined;
+    let cancel: (() => void) | undefined;
+    let timedOut = false;
+    const work = (async () => {
+      try {
+        // Reserve only the probe's connection so an outage deadline can close it
+        // without cancelling announcement writes on other pool connections.
+        if (this.postgres)
+          reserved = await this.sql.reserve({ signal: controller.signal });
+        if (controller.signal.aborted) return false;
+        const query = (reserved ?? this.sql)`SELECT 1`;
+        cancel = () => {
+          query.cancel();
+        };
+        await query;
+        return true;
+      } catch {
+        return false;
+      } finally {
+        if (reserved) {
+          if (timedOut) void reserved.close({ timeout: 0 }).catch(() => {});
+          else void reserved.release().catch(() => {});
+        }
+      }
+    })();
+    const result = new Promise<boolean>((resolve) => {
+      const timer = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+        try {
+          cancel?.();
+        } catch {
+          /* The deadline still returns if a driver rejects cancellation. */
+        }
+        if (reserved) void reserved.close({ timeout: 0 }).catch(() => {});
+        resolve(false);
+      }, timeoutMs);
+      work.then((healthy) => {
+        clearTimeout(timer);
+        resolve(healthy);
+        if (this.readinessFlight === result) this.readinessFlight = undefined;
+      });
+    });
+    // Keep sharing the failed result until the cancelled operation settles.
+    // Even a driver that cannot finish cancellation cannot accumulate probes.
+    this.readinessFlight = result;
+    return result;
   }
   static async open(url = "sqlite://./local/data/site.sqlite") {
     if (url === "sqlite://./local/data/site.sqlite")

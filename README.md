@@ -42,4 +42,4 @@ See [deployment instructions](docs/deployment.md) and [architecture notes](docs/
 
 Keep website HTTP traffic and game TCP/JS5 traffic in separate workloads. Website replicas can share PostgreSQL; a game world remains one authoritative server with persistent account, cache and key storage.
 
-Validation: 7 application tests (54 assertions) and TypeScript checks pass. Desktop and 320/390-pixel mobile layouts have been reviewed in Chromium. Compose configuration and Kustomize rendering pass offline checks; an image build and PostgreSQL runtime test require an available Docker engine or PostgreSQL installation and have not been run.
+Validation: 9 application tests (68 assertions) and TypeScript checks pass. Desktop and 320/390-pixel mobile layouts have been reviewed in Chromium. Compose configuration and Kustomize rendering pass offline checks; the Docker image and PostgreSQL integration have also been exercised with two isolated replicas, shared login sessions, announcement persistence and graceful shutdown. Kubernetes manifests have not been applied to a cluster.
