@@ -1,6 +1,6 @@
 # 2010scape website
 
-A TypeScript/Bun website for the revision 623 server, with a responsive 2010-inspired portal and persistent announcements. Run it locally with SQLite, or use PostgreSQL for shared storage across Kubernetes replicas.
+The website uses the **actual archived 2010 runescape.com HTML, CSS and images** as its runtime foundation. TypeScript/Bun adapts that source into a working site with dynamic announcements, administration and additive responsive styles. Original files stay untouched under ignored `local/`; the repository contains the adapter and application code.
 
 ## Run locally
 
@@ -9,37 +9,47 @@ Install Bun (tested with 1.4.3; `mise install` uses `mise.toml`), then:
 ```sh
 bun install --frozen-lockfile
 cp .env.example .env
+bun run assets:import
 bun run start
 ```
 
-Open http://localhost:3000. Bun reads `.env` automatically. The default SQLite database is `local/data/site.sqlite`; restarting preserves announcements and sessions. Administration is disabled until you configure a password. No game server is required to run the website.
+Open http://localhost:3000. Bun reads `.env` automatically. The SQLite development database is `local/data/site.sqlite`; announcements and sessions survive restarts. The game server is independent.
 
-To enable administration, set `ADMIN_PASSWORD` in your untracked `.env`, run `bun run password:hash`, then replace that plaintext setting with `ADMIN_PASSWORD_HASH` containing the printed hash in single quotes (`ADMIN_PASSWORD_HASH='$argon2id$…'`) so dollar signs stay literal. Restart the website and visit `/admin`. Keep credentials out of Git. Administrators can create, edit, publish and unpublish announcements; drafts are private. Announcement bodies are plain text with paragraphs preserved.
+## Original website files
 
-`DOWNLOAD_URL` enables a real client download link. `GAME_STATUS_URL` optionally points to an HTTP endpoint returning JSON such as `{ "online": true, "players": 12 }`. Without a configured, working endpoint the website reports status as unknown. Game accounts remain managed by the game server.
+Use the full extracted date folder:
 
-## Archived reference assets
-
-The archive is stored at `local/assets/website_source.7z` and is ignored by Git. With 7-Zip installed, run:
-
-```sh
-bun run assets:import
+```text
+local/website-reference/2010-07-18/
+  www.runescape.com/index.html
+  www.runescape.com/css/
+  www.runescape.com/img/
+  services.runescape.com/
+  ...
 ```
 
-This extracts a fixed allowlist of original images and CSS references into `local/`. It never serves archived HTML or scripts. The optional banner is served from `local/reference-assets/`; the site also works without it. No archive or Jagex assets belong in commits or container images. See [local/README.md](local/README.md).
+If it is already extracted, `assets:import` leaves it in place. Otherwise it extracts `local/assets/website_source.7z` using 7-Zip (`7zz` or `7z`). `WEBSITE_ARCHIVE_ROOT` can point to another date-root directory.
 
-## Verify
+The homepage is loaded from the original `index.html`, including its navigation, banner, parchment panels, sidebar and footer. Published announcements replace the original recent-news entries, and configured game status replaces the old player count. News, play, status and administration pages reuse that original HTML shell. The game guide and historical news pages are served locally under `/archive/<original-host>/<path>` with their original styles and images. Original scripts, tracking, Java applets and obsolete account forms do not execute; historical pages carry a reference notice.
+
+`public/site-overrides.css` adds mobile layouts and styling for new application forms. It does not replace the original desktop styles. Without the archive, a minimal setup page and application routes remain available; the original appearance requires the separately supplied source files.
+
+No archive, mirrored HTML or Jagex image/CSS assets belong in commits or container images. All extracted files remain gitignored. See [local/README.md](local/README.md).
+
+## Announcements and integrations
+
+Administration is disabled until configured. Set `ADMIN_PASSWORD` in your untracked `.env`, run `bun run password:hash`, then replace the plaintext setting with the printed hash in single quotes (`ADMIN_PASSWORD_HASH='$argon2id$…'`). Restart and visit `/admin`. Administrators can create, edit, publish and unpublish announcements; drafts remain private. Bodies use escaped plain text with paragraphs preserved.
+
+`DOWNLOAD_URL` enables a real client download. `GAME_STATUS_URL` optionally points to an HTTP JSON endpoint such as `{ "online": true, "players": 12 }`. Missing or unavailable monitoring reports unknown status. Game accounts remain managed by the game server.
+
+## Verify and deploy
 
 ```sh
 bun run check
 ```
 
-This runs TypeScript checks and application tests covering authentication, CSRF, private drafts, publication, escaping, persistence, rate limits and unavailable game status. `/healthz` checks HTTP availability; `/readyz` also checks the database.
+Checks cover authentication, CSRF, drafts/publication, persistence, readiness, original-template integration, local archive links/assets and safe file routing. Review original desktop and 320/390-pixel layouts after template changes. `/healthz` checks HTTP availability; `/readyz` also checks the database with a two-second deadline.
 
-## Containers and Kubernetes
+See [deployment instructions](docs/deployment.md) and [architecture notes](docs/kubernetes-architecture.md). Containers mount the original website tree read-only through `WEBSITE_ARCHIVE_ROOT`; they do not package it. Production uses PostgreSQL and HTTPS. Docker/PostgreSQL integration has exercised two replicas, shared sessions, persistence and outage recovery. Kubernetes templates are supplied; no cluster deployment has been applied.
 
-See [deployment instructions](docs/deployment.md) and [architecture notes](docs/kubernetes-architecture.md) for Docker Compose and Kubernetes manifests. Production uses PostgreSQL, HTTPS and secure cookies. The manifests are templates; no cluster deployment is performed by this repository.
-
-Keep website HTTP traffic and game TCP/JS5 traffic in separate workloads. Website replicas can share PostgreSQL; a game world remains one authoritative server with persistent account, cache and key storage.
-
-Validation: 9 application tests (68 assertions) and TypeScript checks pass. Desktop and 320/390-pixel mobile layouts have been reviewed in Chromium. Compose configuration and Kustomize rendering pass offline checks; the Docker image and PostgreSQL integration have also been exercised with two isolated replicas, shared login sessions, announcement persistence and graceful shutdown. Kubernetes manifests have not been applied to a cluster.
+Validation: TypeScript checks and 17 tests (182 assertions) pass. Original homepage, guide/news pages and application pages were reviewed at 320, 390 and 1440 pixels with no missing rendering assets or horizontal overflow. A built container served the original HTML/CSS/images through a read-only archive mount; the archive remained outside the image and host asset hashes were unchanged.

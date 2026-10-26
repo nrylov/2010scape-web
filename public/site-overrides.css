@@ -1,0 +1,277 @@
+/* Additive application/accessibility rules. Original desktop archive rules win
+   everywhere except the application content and the small-screen layout below. */
+#menus li.top:focus-within > ul {
+  visibility: visible;
+}
+#menus li.top:focus-within > a.tl {
+  color: black;
+  background-position: left -24px;
+}
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #e8c776;
+  outline-offset: 2px;
+}
+.site-archive-notice {
+  box-sizing: border-box;
+  width: min(766px, calc(100% - 16px));
+  margin: 8px auto;
+  padding: 10px;
+  background: #2c2419;
+  color: #dfc89d;
+  border: 1px solid #947c4c;
+  font: 12px/1.5 Arial, sans-serif;
+  overflow-wrap: anywhere;
+}
+body.site-app-page #left {
+  width: 100%;
+  float: none;
+}
+body.site-app-page #right {
+  display: none;
+}
+.site-app-content {
+  text-align: left;
+  color: #dfc89d;
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.site-app-content *,
+.site-app-content *::before,
+.site-app-content *::after {
+  box-sizing: border-box;
+}
+.site-app-content .panel {
+  margin: 0 0 14px;
+  padding: 14px;
+  background: #2c2419;
+  border: 5px solid #4e412d;
+}
+.site-app-content h1,
+.site-app-content h2,
+.site-app-content h3 {
+  color: #f0cd87;
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1.3;
+}
+.site-app-content h1 { font-size: 26px; }
+.site-app-content h2 { font-size: 21px; }
+.site-app-content h3 { font-size: 17px; }
+.site-app-content a { color: #d09d00; }
+.site-app-content img { max-width: 100%; height: auto; }
+.site-app-content .narrow { max-width: 520px; margin-inline: auto; }
+.site-app-content label { display: block; margin: 14px 0; }
+.site-app-content input:not([type="hidden"]),
+.site-app-content textarea,
+.site-app-content select {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 5px;
+  padding: 10px;
+  border: 1px solid #947c4c;
+  border-radius: 0;
+  background: #18150f;
+  color: #f4e4c6;
+  font: 16px/1.4 Arial, sans-serif;
+}
+.site-app-content textarea { min-height: 180px; resize: vertical; }
+.site-app-content button,
+.site-app-content .gold-button {
+  display: inline-block;
+  padding: 10px 16px;
+  min-height: 44px;
+  border: 1px solid #b69554;
+  color: #2c2419;
+  background: #bd9c5a;
+  font: bold 14px/1.4 Arial, sans-serif;
+  cursor: pointer;
+}
+.site-app-content .section-heading,
+.site-app-content .admin-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.site-app-content .admin-row,
+.site-app-content .news-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #635134;
+}
+.site-app-content .admin-row small { flex-basis: 100%; }
+.site-app-content .announcement-body { white-space: pre-wrap; }
+.site-app-content .notice,
+.site-app-content .error { padding: 12px; border: 1px solid #947c4c; }
+.site-app-content .error { border-color: #c47f65; }
+.site-app-content .badge { padding: 2px 8px; border: 1px solid #947c4c; }
+
+@media (max-width: 780px) {
+  #menubox,
+  #banner,
+  #content,
+  #footer .contain {
+    width: calc(100% - 16px);
+    max-width: 766px;
+  }
+  #menubox { height: auto; background-color: #302d26; background-repeat: repeat-x; }
+  #menus {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2px;
+    padding: 3px;
+  }
+  #menus li.top {
+    float: none;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+  }
+  #menus li.top:last-child { grid-column: 1 / -1; }
+  #menus a.tl#login { background: linear-gradient(#404441, #080a09); }
+  #menus a.tl#login .ts { background: none; }
+  #menus a.tl,
+  #menus a.tl:visited {
+    width: 100%;
+    height: auto;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    background-color: #302d26;
+    background-image: none;
+  }
+  #menus a.tl .ts {
+    display: block;
+    width: 100%;
+    height: 23px;
+    line-height: 23px;
+    background: url("/archive/www.runescape.com/img/main/layout/menu_buttons_bg.png") left top repeat-x;
+  }
+  #menus li.top ul {
+    display: none;
+    position: static;
+    padding: 0;
+    background-color: #302d26;
+  }
+  #menus li.top:hover > ul,
+  #menus li.top:focus-within > ul {
+    display: block;
+    visibility: visible;
+  }
+  #menus li.top li { float: none; }
+  #menus a.fly {
+    width: 100%;
+    min-height: 44px;
+    height: auto;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    line-height: 1.4;
+  }
+  #menus a.fly span { padding: 9px 5px; }
+  #banner {
+    height: auto;
+    aspect-ratio: 766 / 292;
+  }
+  #bannerLogo {
+    left: 25.9791%;
+    top: 15.0685%;
+    width: 48.0418%;
+    height: auto;
+  }
+  #bannerPlay {
+    left: 39.4256%;
+    top: 66.7808%;
+    width: 20.8877%;
+    height: 17.8082%;
+  }
+  #bannerPlay img { width: 100%; height: auto; }
+  #content { max-width: 754px; }
+  #left,
+  #right {
+    float: none;
+    width: 100%;
+    min-width: 0;
+  }
+  #right { margin-top: 8px; }
+  #content { overflow-wrap: anywhere; }
+  #content img { max-width: 100%; }
+  #info .sectionBody { height: auto; min-height: 16px; }
+  #info .sectionBody::after { content: ""; display: block; clear: both; }
+  #lang,
+  #players { float: none; }
+  #latestcontent .sectionHeight,
+  #recentnews .sectionHeight,
+  .recentNews,
+  .newsTitle,
+  .recentText,
+  .aowHeight { height: auto; }
+  .recentNews::after,
+  .newsTitle::after { content: ""; display: block; clear: both; }
+  .newsTitle h3,
+  .newsTitle span { float: none; display: block; }
+  .recentNews p { line-height: 1.5; }
+  .newsImage { max-width: 50%; }
+  .newsImage img { box-sizing: border-box; max-width: 100%; margin-inline: 0; }
+  #advert { max-width: 100%; margin-inline: auto; }
+  #advert iframe { max-width: 100%; }
+  #features,
+  #articles,
+  #aog { max-width: 310px; margin-inline: auto; }
+  #features .feature { min-height: 59px; height: auto; }
+  .featureTitle,
+  .featureDesc { overflow-wrap: normal; }
+  .MoreNewsDevblog { table-layout: fixed; }
+  table.MoreNewsDevblog td.AuthorMore { width: 28%; }
+  table.MoreNewsDevblog td.Date { width: 25%; }
+  #devblog table.MoreNewsDevblog tr { display: block; padding: 5px 0; }
+  #devblog table.MoreNewsDevblog td { display: block; width: auto; }
+  #devblog table.MoreNewsDevblog td.AuthorMore,
+  #devblog table.MoreNewsDevblog td.Date { display: inline-block; width: auto; }
+  #devblog table.MoreNewsDevblog td.Date { margin-left: 8px; }
+  #footer { height: auto; min-height: 100px; }
+  #footer .contain { height: auto; min-height: 100px; }
+  .footerdesc { padding: 14px 8px 8px; line-height: 1.4; }
+  .jagexlink { position: static; display: inline-block; margin-bottom: 12px; }
+  .site-app-content .panel { padding: 12px; }
+}
+
+/* The historical guide/news pages use the same chrome with wider article tables. */
+@media (max-width: 780px) {
+  #headBoard, #headOrangeTop, #headOrangeBottom, #headImage, #headAdvert,
+  #headShort, #bannerNoad, #langAndLogin,
+  .navigation, .navigation2, .navigation3 {
+    box-sizing: border-box;
+    width: calc(100% - 16px);
+    max-width: 766px;
+  }
+  #bannerNoad a { left: 50%; transform: translateX(-50%); max-width: 100%; }
+  #langAndLogin { height: auto; min-height: 16px; }
+  #langAndLogin::after { content: ""; display: block; clear: both; }
+  #langAndLogin #sessionText,
+  #langAndLogin #lang { float: none; }
+  .navigation, .navigation2, .navigation3 { height: auto; min-height: 24px; }
+  #content *, #content *::before, #content *::after { box-sizing: border-box; }
+  #content table { max-width: 100%; }
+  #content input, #content select, #content textarea { max-width: 100%; }
+  table.bottomsearch,
+  table.bottomsearch tbody,
+  table.bottomsearch tr,
+  table.bottomsearch td { display: block; width: 100%; }
+  table.bottomsearch table { width: 100%; }
+  table.bottomsearch .searchbutton { margin-left: 0; }
+  .itemborder { width: 100%; max-width: 100%; margin-right: 0; }
+  .cattext { width: auto; float: none; margin-left: 76px; }
+  .pagepad { padding: 16px 12px; }
+  .bottomright { padding-inline: 12px; }
+  .extraimgdiv, .adframe { float: none; max-width: 100%; margin: 8px auto; }
+  .extraimg { max-width: calc(100% - 6px); height: auto; }
+  #bookmark { overflow-wrap: anywhere; }
+}

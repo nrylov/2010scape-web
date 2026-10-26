@@ -1,5 +1,6 @@
 import { Store, ValidationError } from "./store";
-import { layout, escape, newsList, date, editor, field } from "./view";
+import { ArchiveSite } from "./archive";
+import { layout, escape, newsList, archiveNews, date, editor, field } from "./view";
 import { resolve } from "node:path";
 export interface Config {
   databaseUrl?: string;
@@ -9,12 +10,14 @@ export interface Config {
   siteOrigin?: string;
   gameStatusUrl?: string;
   downloadUrl?: string;
+  archiveRoot?: string;
 }
 const digest = (text: string) =>
   new Bun.CryptoHasher("sha256").update(text).digest("hex");
 const token = () => crypto.randomUUID() + crypto.randomUUID();
 export async function createApp(config: Config = {}) {
   const store = await Store.open(config.databaseUrl);
+  const archive = await ArchiveSite.load(config.archiveRoot);
   const adminEnabled = !!(config.adminPasswordHash || config.adminPassword);
   const passwordHash =
     config.adminPasswordHash ||
@@ -22,13 +25,13 @@ export async function createApp(config: Config = {}) {
   const headers = {
     "Content-Type": "text/html; charset=utf-8",
     "Content-Security-Policy":
-      "default-src 'none'; style-src 'self'; img-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+      "default-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "same-origin",
     "Cache-Control": "no-store",
   };
-  const page = (title: string, body: string, status = 200, active = "Home") =>
-    new Response(layout(title, body, active), { status, headers });
+  const page = async (title: string, body: string, status = 200, active = "Home") =>
+    new Response(archive ? await archive.renderPage(title, body) : layout(title, body, active), { status, headers });
   const redirect = (url: string, cookie?: string) =>
     new Response(null, {
       status: 303,
@@ -103,43 +106,24 @@ export async function createApp(config: Config = {}) {
           { status: ready ? 200 : 503 },
         );
       }
-      if (req.method === "GET" && path === "/style.css")
-        return new Response(
-          Bun.file(resolve(import.meta.dir, "../public/style.css")),
-          {
-            headers: {
-              "Content-Type": "text/css",
-              "X-Content-Type-Options": "nosniff",
-            },
-          },
-        );
-      // Explicit allowlist only. Archive HTML/scripts are never publicly served.
-      if (req.method === "GET" && path.startsWith("/reference/")) {
-        const allowed: Record<string, string> = {
-          "/reference/banner.jpg": "banner.jpg",
-          "/reference/stone.jpg": "stone.jpg",
-        };
-        const name = allowed[path];
-        if (!name)
-          return page(
-            "Not found",
-            "<section class=panel><h1>Page not found</h1></section>",
-            404,
-          );
-        const file = Bun.file(
-          resolve(import.meta.dir, "../local/reference-assets", name),
-        );
-        return (await file.exists())
-          ? new Response(file, {
-              headers: { "X-Content-Type-Options": "nosniff" },
-            })
-          : new Response(null, { status: 404 });
+      if (req.method === "GET" && path === "/site-overrides.css")
+        return new Response(Bun.file(resolve(import.meta.dir, "../public/site-overrides.css")), {
+          headers: { "Content-Type": "text/css", "X-Content-Type-Options": "nosniff" },
+        });
+      if (archive && (req.method === "GET" || req.method === "HEAD")) {
+        const response = await archive.serve(req);
+        if (response) return response;
       }
-      if (req.method === "GET" && path === "/")
-        return page(
-          "Welcome",
-          `<section class="hero"><div><p class="eyebrow">The adventure continues</p><h1>Welcome to<br>2010scape</h1><p>A familiar world. A fresh adventure.<br>Rediscover RuneScape as it was in October 2010.</p><a class="gold-button" href="/play">Begin your adventure ›</a></div></section><section class="panel"><div class="section-heading"><h2>Latest news</h2><a href="/news">All news ›</a></div>${newsList(await store.list(), 4)}</section>`,
-        );
+      if (req.method === "GET" && path === "/") {
+        const rows = await store.list();
+        if (archive) {
+          const state = await status();
+          const body = await archive.renderHome(archiveNews(rows.slice(0, 5)),
+            `<b>2010scape</b> · <a href="/status">Game status: ${escape(state.state)}</a>`);
+          return new Response(body, { headers });
+        }
+        return page("Website reference needed", `<section class="panel"><h1>2010scape</h1><p>The original website files are needed to display the 2010 site. Place the extracted date folder at <code>local/website-reference/2010-07-18</code> or set <code>WEBSITE_ARCHIVE_ROOT</code>, then restart.</p><h2>Latest news</h2>${newsList(rows, 5)}</section>`);
+      }
       if (req.method === "GET" && path === "/news")
         return page(
           "Latest news",
@@ -192,7 +176,7 @@ export async function createApp(config: Config = {}) {
           if (auth?.admin === 1) return redirect("/admin");
           const fresh = auth ? null : await newSession(false);
           const csrf = auth?.csrf ?? fresh!.csrf;
-          const response = page(
+          const response = await page(
             "Administrator login",
             `<section class="panel narrow"><h1>Administrator login</h1><form method="post" action="/admin/login">${field(csrf)}<label>Password<input type="password" name="password" autocomplete="current-password" required maxlength="1024"></label><button type="submit">Log in</button></form></section>`,
           );

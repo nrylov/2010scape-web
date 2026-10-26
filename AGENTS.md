@@ -1,8 +1,8 @@
 # Contributor notes
 
-This repository contains the TypeScript website for 2010scape. Keep the period-2010 appearance while implementing modern responsive layout and server-backed announcements.
+This repository contains the TypeScript website for 2010scape. Use the actual original HTML/CSS/images from `local/website-reference/2010-07-18/` as the runtime foundation, with additive responsive CSS and server-backed announcements. Do not substitute a recreated theme.
 
-- The reference archive is `local/assets/website_source.7z`. NEVER commit this archive, extracted Jagex assets, credentials, database files, machine-specific files or runtime data. Derived reference assets remain under gitignored `local/` and are excluded from Docker contexts.
+- The reference archive is `local/assets/website_source.7z`; its full extracted tree is `local/website-reference/2010-07-18/`. NEVER commit this archive, extracted Jagex assets, credentials, database files, machine-specific files or runtime data. Derived reference assets remain under gitignored `local/` and are excluded from Docker contexts.
 - Keep the website separate from the game server. Use environment-based endpoints rather than importing its source or relying on a sibling checkout at runtime.
 - Public news must exclude drafts. Validate and escape submitted content; administrative writes require authentication and CSRF protection. Never provide a committed default administrator password.
 - Local development should work without Kubernetes. Production containers must run without root and expose health/readiness checks; production database state must survive pod replacement. PostgreSQL supports shared website state; game worlds remain separately authoritative processes.

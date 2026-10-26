@@ -14,20 +14,14 @@ export const date = (stamp: number) =>
     year: "numeric",
     timeZone: "UTC",
   });
-export function layout(title: string, content: string, active = "Home") {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="2010scape — a RuneScape revision 623 community project."><title>${escape(title)} - 2010scape</title><link rel="stylesheet" href="/style.css"></head><body><div class="site"><header><a class="brand" href="/" aria-label="2010scape home"><span class="crest">⚔</span><span>2010<span class="brand-gold">scape</span><small>A world worth returning to</small></span></a><a class="top-play" href="/play">Play now</a></header><nav aria-label="Main navigation">${[
-    ["Home", "/"],
-    ["News", "/news"],
-    ["Play", "/play"],
-    ["Status", "/status"],
-  ]
-    .map(
-      ([name, href]) =>
-        `<a href="${href}" ${active === name ? 'aria-current="page"' : ""}>${name}</a>`,
-    )
-    .join(
-      "",
-    )}</nav><div class="columns"><aside><section class="panel"><h2>The adventure</h2><a class="play-button" href="/play">Enter the world <span>Play 2010scape</span></a><p>Return to the age of adventure.</p></section><section class="panel side-links"><h2>Explore 2010scape</h2><a href="/news">Latest news <span>›</span></a><a href="/play">Getting started <span>›</span></a><a href="/status">Server status <span>›</span></a></section><section class="panel"><h2>October 2010</h2><p>Revision 623. Familiar places, skills to master, and adventures to discover.</p></section></aside><main id="main">${content}</main></div><footer><a href="/">Home</a> · <a href="/news">News</a> · <a href="/admin">Administration</a><p>2010scape is an independent community project and is not affiliated with Jagex. RuneScape is a trademark of Jagex Ltd.</p></footer></div></body></html>`;
+/** Minimal operator fallback when the separately supplied archive is unavailable. */
+export function layout(title: string, content: string, _active = "Home") {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(title)} - 2010scape</title><link rel="stylesheet" href="/site-overrides.css"></head><body class="site-app-page archive-unavailable"><nav><a href="/">Home</a> · <a href="/news">News</a> · <a href="/play">Play</a> · <a href="/status">Status</a> · <a href="/admin">Administration</a></nav><main class="site-app-content">${content}</main></body></html>`;
+}
+/** Dynamic news bodies inserted inside the original homepage's news section. */
+export function archiveNews(rows: Announcement[]) {
+  const entries = rows.map(row => `<div class="sectionBody"><div class="recentNews"><div class="newsTitle"><h3><a href="/news/${escape(row.id)}">${escape(row.title)}</a></h3><span>${date(row.published_at!)}</span></div><p>${escape(row.body.slice(0, 300))}${row.body.length > 300 ? "…" : ""} <a href="/news/${escape(row.id)}">Read more...</a></p></div></div>`).join("") || '<div class="sectionBody"><div class="recentNews"><div class="newsTitle"><h3>2010scape news</h3></div><p>No announcements have been published yet.</p></div></div>';
+  return entries + '<div class="sectionBody"><a href="/news">All 2010scape news</a></div>';
 }
 export function newsList(rows: Announcement[], limit?: number) {
   return (

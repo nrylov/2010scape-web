@@ -32,6 +32,26 @@ The process runs as the image's non-root `bun` user (UID 1000), listens on port 
 
 For a standalone SQLite container, mount persistent storage at `/app/local/data` and set `DATABASE_URL=sqlite:///app/local/data/site.sqlite`. Run one instance against that file. The Kubernetes configuration deliberately uses PostgreSQL, not per-pod SQLite files.
 
+## Original website archive at runtime
+
+The public layout uses the extracted 2010 HTML, CSS and images. Extract the supplied archive locally using the README workflow; the archive and extracted assets stay under ignored `local/` and are never copied into the container image. `WEBSITE_ARCHIVE_ROOT` must name the extracted date directory containing host folders such as `www.runescape.com`, not the host folder itself. Its local default is `local/website-reference/2010-07-18`.
+
+For a standalone container, provide that directory as a read-only bind mount and set its container path:
+
+```sh
+docker run --rm -p 127.0.0.1:3000:3000 \
+  --mount type=bind,src="$PWD/local/website-reference/2010-07-18",dst=/srv/website-reference,readonly \
+  -e WEBSITE_ARCHIVE_ROOT=/srv/website-reference \
+  -e DATABASE_URL='postgresql://user:password@database-host/site' \
+  2010scape-web:local
+```
+
+The database URL above is illustrative; pass real credentials through an untracked environment file or secret mechanism. The provided Compose file does not mount the archive automatically. Add a local override with the same read-only bind mount and `WEBSITE_ARCHIVE_ROOT` setting before using the original layout in Compose.
+
+For Kubernetes, supply extracted assets separately on a volume readable by UID 1000. Mount it read-only into every website replica and set `WEBSITE_ARCHIVE_ROOT` to the mount path. Choose storage accessible by every scheduled replica, such as a separately provisioned read-only shared volume; a developer-machine path is suitable only for explicitly local testing. These assets are too large for ConfigMaps and must not be placed in Git, Secrets or the published application image. The generic manifests deliberately do not provision or populate this archive volume; add that environment setting and volume mount to your deployment overlay.
+
+The additive `public/site-overrides.css` keeps original desktop assets/layout and adapts narrow screens. Archive scripts are removed by the server adapter; menu keyboard/touch behavior uses CSS focus rules. Extracted source pages are historical reference material rather than live account or payment services.
+
 ## Kubernetes manifests
 
 `deploy/kubernetes/` contains a Kustomize base with a namespace, ConfigMap, two-replica Deployment and ClusterIP Service. It uses an external PostgreSQL database shared by both replicas. Announcements and opaque login sessions are stored in that database.
@@ -66,3 +86,5 @@ Docker builds require an already running Docker engine. If that engine is unavai
 Validation passed with OrbStack Docker 29.8.2: the Bun 1.4.3 image built with a 32.58 kB build context, and two disposable website containers shared PostgreSQL 17. Checks covered simultaneous startup, UID 1000 with a read-only root filesystem, cross-replica login/CSRF, draft privacy, publishing/unpublishing, announcement/session persistence after an application restart, and SIGTERM exit status 0. Test containers, database volume and network were removed afterward. Compose configuration, Kustomize rendering and YAML/security checks also passed. No Kubernetes deployment was applied.
 
 The PostgreSQL healthcheck uses TCP explicitly: its temporary initialization server can accept Unix-socket checks before TCP is available. During a real PostgreSQL outage, `/readyz` returned HTTP 503 in 2.009 seconds while `/healthz` stayed HTTP 200. Restarting PostgreSQL restored HTTP 200 readiness on both replicas and retained the administrator session. Readiness has a two-second deadline, below the Kubernetes probe's three-second timeout.
+
+The final original-template image was also validated with an isolated read-only archive bind mount and in-memory SQL: the homepage retained the original banner/menu HTML, and the archived guide, original CSS, image and responsive overlay returned HTTP 200. The archive mount was confirmed read-only and sampled host HTML/CSS/image hashes were unchanged. The final build context was 41.35 kB and `/app/local/` contained no reference archive/assets. Running the same image without an archive mount served the fallback homepage with HTTP 200 readiness. Both temporary containers were removed.

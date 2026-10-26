@@ -9,6 +9,7 @@ const app = await createApp({
   siteOrigin: process.env.SITE_ORIGIN,
   gameStatusUrl: process.env.GAME_STATUS_URL,
   downloadUrl: process.env.DOWNLOAD_URL,
+  archiveRoot: process.env.WEBSITE_ARCHIVE_ROOT,
 });
 const server = Bun.serve({
   port: Number(process.env.PORT || 3000),
