@@ -31,10 +31,10 @@ An HTTPS Ingress routes browser traffic to the website's ClusterIP Service. The 
 
 A RuneScape world's client TCP stream is not HTTP and cannot pass through an ordinary HTTP Ingress route. A future game deployment needs a TCP-aware load balancer or Service for port 43594, plus separately configured cache/JS5 access. A generic website reverse proxy does not convert the original Java client into a browser/WebSocket client.
 
-The current game server uses local account files and an in-memory authoritative world. Multiple replicas pointing at the same save directory would race and would not share world state. Keep one process per world; scaling the website does not scale that process. A future Kubernetes world deployment should prevent overlapping authoritative processes during replacement, preserve its saves, and handle player disconnect/reconnect explicitly.
+The current game server uses local account files and an in-memory authoritative world. Multiple replicas pointing at the same save directory would race and would not share world state. Keep one process per world; scaling the website does not scale that process. The game repository now provides a one-replica Recreate Deployment, a separate character-data PVC, read-only cache/key mounts and status probes. Its isolated OrbStack world is deployed separately from the website and PostgreSQL; pod replacement preserves saved characters.
 
 The game repository's `local/` includes account/runtime data, RSA material, cache files and other uncommitted assets. A world container would need carefully separated persistent writable saves, restricted key material and read-only cache/assets supplied outside the image. They must not be copied from the developer's machine into a published build context. This website image and its `.dockerignore` exclude all of those files.
 
 ## Deployment ownership
 
-The manifests supplied here cover the website only. Database provisioning, backups, TLS, DNS, ingress-controller installation and any future game-world deployment are infrastructure operations performed separately. No cluster apply, Docker-engine startup or game-server restart is part of local website checks.
+The manifests supplied here cover the website only. Database provisioning, backups, TLS, DNS, ingress-controller installation and the separate game-world deployment are infrastructure operations performed separately. No cluster apply, Docker-engine startup or game-server restart is part of local website checks.
