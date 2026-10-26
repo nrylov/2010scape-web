@@ -1,0 +1,17 @@
+{
+  "name": "2010scape-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun src/server.ts",
+    "dev": "bun --watch src/server.ts",
+    "check": "tsc --noEmit && bun test",
+    "test": "bun test",
+    "assets:import": "bun scripts/import-assets.ts",
+    "password:hash": "bun scripts/hash-password.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.0",
+    "typescript": "^5.9.3"
+  }
+}

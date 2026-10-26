@@ -1,0 +1,24 @@
+# OPTIONAL EXAMPLE: configure your ingress controller, domain and TLS Secret first.
+# This file is intentionally excluded from kustomization.yaml.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: 2010scape-web
+  namespace: 2010scape-web
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - 2010scape.example
+      secretName: 2010scape-web-tls
+  rules:
+    - host: 2010scape.example
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: 2010scape-web
+                port:
+                  name: http
