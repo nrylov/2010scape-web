@@ -116,3 +116,9 @@ TypeScript, focused tests and the original-template browser preview before its
 website-only rollout. The Codex in-app browser could not resolve/reach OrbStack's
 Service address; deployed verification used HTTP, with visual checks on the
 matching local preview.
+
+Final rollout readiness and all public-route checks passed inside the website
+pod. The owner confirmed the deployed site opens in their browser. Attempts from
+this agent's browser/HTTP tools failed to resolve or connect to the Service;
+that tool-access limitation is not evidence of a website/OrbStack outage. No
+networking configuration was changed in response.
