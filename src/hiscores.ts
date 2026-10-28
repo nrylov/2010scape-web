@@ -162,7 +162,7 @@ export async function handleHiscores(request: Request, archive: Pick<ArchiveSite
     .on("h1.plaque", { element(e) { e.setInnerContent("RuneScape Hiscores", { html: true }); } })
     .on("#skillsList ul", { element(e) { e.setInnerContent(skillsMenu(skill), { html: true }); } })
     .on("#modeSelect_back .buttons", { element(e) { e.setInnerContent('<a id="button-left" href="/hiscores"><span class="lev1a"></span>Skills</a>', { html: true }); } })
-    .on("#playerList_back", { element(e) { e.setInnerContent(playerName === undefined ? leaderboardPane(skill, rows, total, page, provider.dataLabel) : playerPane(player, provider.dataLabel), { html: true }); } })
+    .on("#playerList_back", { element(e) { e.setAttribute("style", "height:auto;min-height:466px"); e.setInnerContent(playerName === undefined ? leaderboardPane(skill, rows, total, page, provider.dataLabel) : playerPane(player, provider.dataLabel), { html: true }); } })
     .on("#search_back", { element(e) { e.setInnerContent(searchPane(skill), { html: true }); } })
     .on("#footer .jagexlink img", { element(e) { e.setAttribute("src", "/archive/www.runescape.com/img/main/layout/jagexc20a.png"); } })
     .transform(new Response(template)).text();

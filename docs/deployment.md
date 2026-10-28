@@ -98,3 +98,21 @@ The native local Service address is `http://2010scape-web.2010scape-test.svc.clu
 The active verification script checks real archived pages/assets, administrator login, CSRF, draft/publication controls, website pod replacement, database outage/readiness and PostgreSQL pod replacement with retained sessions/content. It removes its temporary announcement and leaves the test deployment running. See the workflow README before running it because these checks deliberately replace local test pods.
 
 Local-cluster validation passed: both website and PostgreSQL pods became Ready, PostgreSQL retained a Bound 2 GiB claim, and original assets were served through the read-only host mount. Authentication, CSRF, publication controls, 32 readiness probes interleaved with authenticated requests, website pod replacement, PostgreSQL readiness failure/recovery and session/content persistence passed. Temporary announcements were removed. The website status page reached the separate game Service. Single-replica replacement briefly interrupts native Service connections; the verifier retries reads only. No shared readiness-pool leak was reproduced, and application SQL code was unchanged.
+
+## Publishing, forum and sample-data milestone (28 October 2026)
+
+Image `2010scape-web:website-20261028-2` adds original-template news/developer
+publishing with formatting controls, one website administrator identity,
+public-read/admin-write forums, contrived GE price graphs and sample hiscores.
+It has no game-account/character-file dependency. Reference assets remain on the
+read-only mount; the image is built from committed source.
+
+The expanded OrbStack verifier passed administrator auth/CSRF, drafts,
+publication, forum previews and posting, all new public routes, website pod
+replacement, PostgreSQL outage/readiness/recovery, and session/draft/forum
+persistence on the PVC. Temporary test content was removed. The game Deployment
+was not restarted. A final hiscores panel-height correction was checked with
+TypeScript, focused tests and the original-template browser preview before its
+website-only rollout. The Codex in-app browser could not resolve/reach OrbStack's
+Service address; deployed verification used HTTP, with visual checks on the
+matching local preview.
