@@ -8,3 +8,7 @@ This repository contains the TypeScript website for 2010scape. Use the actual or
 - Local development should work without Kubernetes. Production containers must run without root and expose health/readiness checks; production database state must survive pod replacement. PostgreSQL supports shared website state; game worlds remain separately authoritative processes.
 - Use Bun and TypeScript, with the runtime pinned in `mise.toml`. Run the project checks and verify the rendered desktop/mobile pages before committing. Include database/authentication/draft-publication coverage.
 - Document configuration, archive import and deployment limitations in README/docs. Do not deploy to external infrastructure as part of local development.
+
+- Publishing and forums reuse the original news/devblog/forum templates. `/admin` supports Markdown formatting and previews; `/forums` currently uses the same single website administrator account for posting/moderation, with public reading/search. Do not read game character files from the website. An account database or external auth service is future work. See `docs/publishing-and-forums.md` for audited coverage and limits (2026-10-28).
+
+- `/grand-exchange` and `/hiscores` use original templates with labeled contrived data behind `PriceHistorySource` and `HiscoresProvider`. Live GE/history ingestion and hiscores data are deferred; see `docs/market-and-hiscores.md`.

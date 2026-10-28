@@ -51,9 +51,10 @@ async function request(path: string, form?: Record<string, string>, overrideCook
 const csrf = (html: string) => html.match(/name="csrf" value="([^"]+)"/)?.[1] ?? "";
 const title = "Local deployment verification " + crypto.randomUUID();
 let id: string | undefined;
+let forumId: string | undefined;
 let databaseStopped = false;
 try {
-  for (const path of ["/healthz", "/readyz", "/", "/archive/www.runescape.com/css/global-34.css", "/archive/www.runescape.com/img/main/home/bannerLogoc4ca.jpg", "/archive/www.runescape.com/kbase/guid/manual.html"]) {
+  for (const path of ["/healthz", "/readyz", "/", "/news", "/devblog", "/forums", "/hiscores", "/grand-exchange", "/grand-exchange/items/1333/graph.svg?days=90", "/archive/www.runescape.com/css/global-34.css", "/archive/www.runescape.com/img/main/home/bannerLogoc4ca.jpg", "/archive/www.runescape.com/kbase/guid/manual.html"]) {
     const response = await request(path);
     check(response.status === 200, `${path} returns 200`);
     if (path === "/") check((await response.text()).includes('id="bannerLogo"'), "original archived homepage rendered");
@@ -74,6 +75,11 @@ try {
     await page.text();
   }
   check(true, "32 readiness probes interleaved with authenticated requests");
+  const preview = await request("/forums/preview", {csrf:token,body:"**OrbStack preview**"});
+  check(preview.status===200 && (await preview.json()).html.includes("<strong>OrbStack preview</strong>"), "administrator forum formatting preview");
+  const created = await request("/forums/boards/general/threads", {csrf:token,title,body:"Temporary **forum persistence** check"});
+  forumId = created.headers.get("location")?.match(/\/forums\/threads\/([a-f0-9-]{36})/)?.[1];
+  check(created.status===303 && !!forumId, "administrator creates a forum thread");
   const input = { csrf: token, title, body: "Private deployment test <script>window.invalid=true</script>", state: "draft" };
   check((await request("/admin/announcements", input)).status === 303, "draft creation");
   const list = await (await request("/admin")).text();
@@ -115,12 +121,18 @@ try {
   admin = await request("/admin");
   const recovered = await admin.text();
   check(admin.status === 200 && recovered.includes(title), "session and draft survive PostgreSQL pod replacement on PVC");
+  const savedThread=await request("/forums/threads/"+forumId);
+  check(savedThread.status===200 && (await savedThread.text()).includes("<strong>forum persistence</strong>"), "forum thread survives website and PostgreSQL replacement");
   token = csrf(recovered);
   check((await request("/admin/logout", { csrf: token })).status === 303, "administrator logout");
 } finally {
   if (databaseStopped) {
     await kube(["scale", "statefulset/2010scape-web-postgres", "--replicas=1"]);
     await kube(["rollout", "status", "statefulset/2010scape-web-postgres", "--timeout=55s"]);
+  }
+  if (forumId && /^[a-f0-9-]{36}$/.test(forumId)) {
+    await kube(["exec", "-i", "2010scape-web-postgres-0", "--", "psql", "-U", "2010scape", "-d", "2010scape_web", "-v", "ON_ERROR_STOP=1"], `BEGIN; DELETE FROM forum_posts WHERE thread_id = '${forumId}'; DELETE FROM forum_threads WHERE id = '${forumId}'; COMMIT;\n`);
+    console.log("PASS temporary forum thread removed");
   }
   if (id && /^[a-f0-9-]{36}$/.test(id)) {
     await kube(["exec", "-i", "2010scape-web-postgres-0", "--", "psql", "-U", "2010scape", "-d", "2010scape_web", "-v", "ON_ERROR_STOP=1"], `DELETE FROM announcements WHERE id = '${id}';\n`);

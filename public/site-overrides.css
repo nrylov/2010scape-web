@@ -275,3 +275,49 @@ body.site-app-page #right {
   .extraimg { max-width: calc(100% - 6px); height: auto; }
   #bookmark { overflow-wrap: anywhere; }
 }
+
+/* Published bodies keep the archive article frames, with responsive author content. */
+.editorial-body { overflow-wrap: anywhere; }
+.editorial-body img { max-width: 100%; height: auto; }
+.editorial-body pre { max-width: 100%; overflow-x: auto; padding: 10px; background: rgba(0,0,0,.2); }
+.editorial-body blockquote { border-left: 3px solid #a88c5b; margin: 12px 0; padding-left: 15px; }
+.editorial-pagination { clear: both; text-align: center; padding: 14px 4px; }
+.editorial-pagination span { margin: 0 14px; }
+.editor-toolbar { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 5px; }
+.editor-toolbar button { padding: 5px 10px; }
+.editor-preview { border: 1px solid #a88c5b; padding: 14px; margin: 12px 0; background: #382f21; }
+.editorial-empty { padding: 20px; }
+@media(max-width:780px) {
+  #newsList { width:100%; table-layout:fixed; }
+  #newsList td { padding:8px 4px; overflow-wrap:anywhere; }
+  #newsList .catLink span { display:block; }
+  .site-editorial-page #main,.site-editorial-page #list,.site-editorial-page #post,.site-editorial-page #filter { width:auto; max-width:100%; float:none; }
+  .site-editorial-page .postDetails,.site-editorial-page .postDate { float:none; display:block; width:auto; }
+  .site-editorial-page .postImage { margin-right:10px; }
+  .site-editorial-page #filter form { display:flex; flex-wrap:wrap; gap:12px; }
+}
+
+@media(max-width:780px) {
+  .site-editorial-page .devblog,
+  .site-editorial-page .devblogHead,
+  .site-editorial-page .devblogFoot { width:100%; max-width:100%; background-size:100% auto; }
+  .site-editorial-page .devblogFoot,
+  .site-editorial-page #post .devblogFoot { padding:24px 18px 60px; }
+  .site-editorial-page #archives { width:auto; margin-bottom:24px; }
+  .site-editorial-page .devblogFoot h2 { height:auto; min-height:80px; font-size:18px; overflow-wrap:anywhere; }
+  .site-editorial-page #list .listPost { height:auto; min-height:122px; overflow-wrap:anywhere; }
+  .site-editorial-page #list h3 { height:auto; min-height:23px; }
+  .site-editorial-page #list .postDetails,
+  .site-editorial-page #list .postDate { float:none; width:auto; display:block; }
+  .site-editorial-page #list .postMeta,
+  .site-editorial-page #list .postProject { position:static; width:auto; clear:both; padding-top:8px; }
+  .site-editorial-page #list .postImage { float:right; margin-left:10px; }
+}
+
+.site-editorial-page .editorial-body h2 { height:auto; min-height:0; margin:1em 0 .5em; letter-spacing:normal; text-align:left; font-size:1.4em; }
+@media(max-width:780px) {
+  .site-editorial-page #filter label { display:flex; align-items:center; gap:6px; }
+}
+.editorial-editor textarea[name="summary"] { min-height:70px; }
+.exchange-page #ticker{height:auto;min-height:24px;padding:5px;box-sizing:border-box}.exchange-page .exchange-graph{max-width:100%;height:auto}.exchange-page #item_graph_image{max-width:100%}
+@media(max-width:780px){.exchange-page #browsebox{display:none}.exchange-page .main_ge_page{width:100%;float:none;box-sizing:border-box}.exchange-page #item_graph_image{width:100%;table-layout:fixed}.exchange-page #item_graph_image td{padding:0}.exchange-page #legend{float:none;width:auto}.exchange-page #item_graph_nav{width:auto}.exchange-page #searchbox{height:auto}.exchange-page #item_additional .spaced_span{display:inline-block;margin:6px}}

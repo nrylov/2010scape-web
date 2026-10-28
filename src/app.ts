@@ -1,3 +1,7 @@
+import { handleHiscores } from "./hiscores";
+import { handleExchange } from "./exchange";
+import { createForum } from "./forum";
+import {renderContent, type ContentFormat} from "./richtext";
 import { Store, ValidationError } from "./store";
 import { ArchiveSite } from "./archive";
 import { layout, escape, newsList, archiveNews, date, editor, field } from "./view";
@@ -25,7 +29,7 @@ export async function createApp(config: Config = {}) {
   const headers = {
     "Content-Type": "text/html; charset=utf-8",
     "Content-Security-Policy":
-      "default-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+      "default-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; script-src 'self'; connect-src 'self'; font-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "same-origin",
     "Cache-Control": "no-store",
@@ -61,6 +65,13 @@ export async function createApp(config: Config = {}) {
     await store.sql`INSERT INTO sessions VALUES (${digest(raw)}, ${csrf}, ${admin ? 1 : 0}, ${now + 8 * 3600_000})`;
     return { raw, csrf };
   }
+  const forum = await createForum({sql: store.sql, archive, siteOrigin: config.siteOrigin, loginPath: "/admin/login", headers,
+    authenticate: async req => {
+      const admin = await session(req);
+      if (admin?.admin === 1) return {id: 'website-administrator', name: '2010scape team', role: 'admin', csrf: admin.csrf};
+      return undefined;
+    },
+  });
   async function status() {
     if (!config.gameStatusUrl)
       return {
@@ -110,6 +121,19 @@ export async function createApp(config: Config = {}) {
         return new Response(Bun.file(resolve(import.meta.dir, "../public/site-overrides.css")), {
           headers: { "Content-Type": "text/css", "X-Content-Type-Options": "nosniff" },
         });
+      const hiscoresResponse = await handleHiscores(req, archive);
+      if (hiscoresResponse) return hiscoresResponse;
+      const exchangeResponse = await handleExchange(req, archive);
+      if (exchangeResponse) return exchangeResponse;
+      const forumResponse = await forum.handle(req, ip);
+      if (forumResponse) return forumResponse;
+      if (req.method === 'GET' && path === '/editor.js')
+        return new Response(Bun.file(resolve(import.meta.dir,'../public/editor.js')), {headers:{'Content-Type':'text/javascript; charset=utf-8','X-Content-Type-Options':'nosniff'}});
+      if (req.method === 'GET') {
+        const decoded = decodeURIComponent(path);
+        if (/^\/archive\/services\.runescape\.com\/m=news\/list\.html$/.test(decoded)) return redirect('/news');
+        if (/^\/archive\/services\.runescape\.com\/m=devblog\/index\.html$/.test(decoded)) return redirect('/devblog');
+      }
       if (archive && (req.method === "GET" || req.method === "HEAD")) {
         const response = await archive.serve(req);
         if (response) return response;
@@ -124,22 +148,27 @@ export async function createApp(config: Config = {}) {
         }
         return page("Website reference needed", `<section class="panel"><h1>2010scape</h1><p>The original website files are needed to display the 2010 site. Place the extracted date folder at <code>local/website-reference/2010-07-18</code> or set <code>WEBSITE_ARCHIVE_ROOT</code>, then restart.</p><h2>Latest news</h2>${newsList(rows, 5)}</section>`);
       }
-      if (req.method === "GET" && path === "/news")
-        return page(
-          "Latest news",
-          `<section class="panel"><h1>Latest news</h1>${newsList(await store.list())}</section>`,
-          200,
-          "News",
-        );
-      if (req.method === "GET" && /^\/news\/[^/]+$/.test(path)) {
-        const row = await store.get(path.split("/")[2]!);
-        if (row)
-          return page(
-            row.title,
-            `<article class="panel"><a href="/news">‹ All news</a><h1>${escape(row.title)}</h1><time>${date(row.published_at!)}</time><div class="announcement-body">${escape(row.body)}</div></article>`,
-            200,
-            "News",
-          );
+      if (req.method === 'GET' && (path === '/news' || path === '/devblog')) {
+        const kind = path === '/devblog' ? 'devblog' : 'news';
+        const all = await store.list(false,kind);
+        const category = url.searchParams.get('category') || undefined, author = url.searchParams.get('author') || undefined;
+        const project = url.searchParams.get('project') || undefined, tag = url.searchParams.get('tag') || undefined;
+        const filtered = all.filter(row => (!category || row.category===category) && (!author || row.author===author) && (!project || row.project===project) && (!tag || row.tags.split(',').map(value=>value.trim()).includes(tag)));
+        const pages = Math.max(1,Math.ceil(filtered.length/20));
+        const pageNumber = Math.min(pages,Math.max(1,Math.floor(Number(url.searchParams.get('page')))||1));
+        const rows = filtered.slice((pageNumber-1)*20,pageNumber*20);
+        const original = await archive?.renderEditorialList(kind,rows,{page:pageNumber,pages,category,author,project,tag,all});
+        if (original) return new Response(original,{headers});
+        return page(kind==='devblog' ? "Developers' Blogs" : 'Latest news', `<section class="panel"><h1>${kind==='devblog' ? "Developers' Blogs" : 'Latest news'}</h1>${newsList(rows)}</section>`);
+      }
+      if (req.method === 'GET' && /^\/(news|devblog)\/[^/]+$/.test(path)) {
+        const [,kind,id] = path.split('/'), row = await store.get(id!);
+        if (row && row.kind === kind) {
+          const body = renderContent(row.body,row.format);
+          const original = await archive?.renderEditorial(row,body);
+          if (original) return new Response(original,{headers});
+          return page(row.title, `<article class="panel"><a href="/${kind}">‹ All ${kind==='devblog'?'developer posts':'news'}</a><h1>${escape(row.title)}</h1><time>${date(row.published_at!)}</time><div class="announcement-body editorial-body">${body}</div></article>`);
+        }
       }
       if (req.method === "GET" && path === "/play") {
         let download = "";
@@ -247,6 +276,11 @@ export async function createApp(config: Config = {}) {
             await store.sql`DELETE FROM sessions WHERE id=${auth.id}`;
             return redirect("/admin/login", cookie("", 0));
           }
+          if (path === '/admin/preview') {
+            const body = form.get('body') ?? '', format = form.get('format') ?? 'markdown';
+            if (body.length > 30000 || !['plain','markdown'].includes(format)) return Response.json({error:'Invalid preview'},{status:400});
+            return Response.json({html:renderContent(body,format as ContentFormat)},{headers:{'Cache-Control':'no-store'}});
+          }
           if (/^\/admin\/announcements(?:\/[^/]+)?$/.test(path)) {
             const id = path.split("/")[3];
             try {
@@ -255,6 +289,9 @@ export async function createApp(config: Config = {}) {
                 title: form.get("title") || "",
                 body: form.get("body") || "",
                 state: form.get("state") || "",
+                kind: form.get('kind') ?? undefined, format: form.get('format') ?? undefined,
+                author: form.get('author') ?? undefined, category: form.get('category') ?? undefined,
+                project: form.get('project') ?? undefined, tags: form.get('tags') ?? undefined, summary: form.get('summary') ?? undefined,
               });
               return redirect("/admin");
             } catch (error) {
@@ -267,6 +304,7 @@ export async function createApp(config: Config = {}) {
                   error instanceof ValidationError
                     ? error.message
                     : "Unable to save. Please try again.",
+                  Object.fromEntries(['title','body','kind','format','author','category','project','tags','summary','state'].map(key=>[key,form.get(key)??''])) as Partial<import('./store').Announcement>,
                 ),
                 400,
               );
@@ -277,7 +315,7 @@ export async function createApp(config: Config = {}) {
         if (req.method === "GET" && path === "/admin")
           return page(
             "Announcements",
-            `<section class="panel"><div class="section-heading"><h1>Announcements</h1><form method="post" action="/admin/logout">${field(auth.csrf)}<button type="submit">Log out</button></form></div><p><a class="gold-button" href="/admin/announcements/new">Create announcement</a></p>${(await store.list(true)).map((row) => `<article class="admin-row"><a href="/admin/announcements/${escape(row.id)}">${escape(row.title)}</a><span class="badge">${escape(row.state)}</span><small>Updated ${date(row.updated_at)}</small></article>`).join("") || "<p>No announcements yet. Create your first update.</p>"}</section>`,
+            `<section class="panel"><div class="section-heading"><h1>News and developer posts</h1><p><a href="/forums">Visit and moderate the forums</a></p><form method="post" action="/admin/logout">${field(auth.csrf)}<button type="submit">Log out</button></form></div><p><a class="gold-button" href="/admin/announcements/new">Create post</a></p>${(await store.list(true)).map((row) => `<article class="admin-row"><a href="/admin/announcements/${escape(row.id)}">${escape(row.title)}</a><span class="badge">${escape(row.kind)} · ${escape(row.state)}</span><small>Updated ${date(row.updated_at)}</small></article>`).join("") || "<p>No announcements yet. Create your first update.</p>"}</section>`,
           );
         if (req.method === "GET" && path === "/admin/announcements/new")
           return page("Create announcement", editor(auth.csrf));

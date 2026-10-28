@@ -1,6 +1,15 @@
+import {sqlTransaction} from "./sql-transactions";
 import { SQL } from "bun";
 import { mkdir } from "node:fs/promises";
+export type PostKind = "news" | "devblog";
 export interface Announcement {
+  kind: PostKind;
+  format: "plain" | "markdown";
+  author: string;
+  category: string;
+  project: string;
+  tags: string;
+  summary: string;
   id: string;
   title: string;
   body: string;
@@ -77,56 +86,60 @@ export class Store {
     if (url === "sqlite://./local/data/site.sqlite")
       await mkdir("local/data", { recursive: true });
     const store = new Store(url);
-    await store.sql.begin(async (tx) => {
+    await sqlTransaction(store.sql, async (tx) => {
       if (/^postgres(?:ql)?:/.test(url))
         await tx`SELECT pg_advisory_xact_lock(2010623)`;
       await tx`CREATE TABLE IF NOT EXISTS announcements (id TEXT PRIMARY KEY, title TEXT NOT NULL, body TEXT NOT NULL, state TEXT NOT NULL CHECK (state IN ('draft','published')), created_at BIGINT NOT NULL, updated_at BIGINT NOT NULL, published_at BIGINT)`;
+      // Existing announcement databases remain readable; plain text is never reinterpreted as Markdown.
+      const columns = /^postgres(?:ql)?:/.test(url)
+        ? (await tx`SELECT column_name AS name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'announcements'`).map((row: any) => row.name)
+        : (await tx`PRAGMA table_info(announcements)`).map((row: any) => row.name);
+      for (const [name, fallback] of Object.entries({kind:'news',format:'plain',author:'2010scape team',category:'Game Updates',project:'Development',tags:'',summary:''})) {
+        if (!columns.includes(name)) await tx.unsafe(`ALTER TABLE announcements ADD COLUMN ${name} TEXT NOT NULL DEFAULT '${fallback}'`);
+      }
       await tx`CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, csrf TEXT NOT NULL, admin INTEGER NOT NULL, expires_at BIGINT NOT NULL)`;
       await tx`CREATE TABLE IF NOT EXISTS login_limits (id TEXT PRIMARY KEY, attempts INTEGER NOT NULL, expires_at BIGINT NOT NULL)`;
     });
     return store;
   }
-  async list(admin = false): Promise<Announcement[]> {
-    return admin
-      ? await this
-          .sql`SELECT * FROM announcements ORDER BY created_at DESC, id DESC`
-      : await this
-          .sql`SELECT * FROM announcements WHERE state = 'published' ORDER BY published_at DESC, id DESC`;
+  async list(admin = false, kind?: PostKind): Promise<Announcement[]> {
+    const selected = kind ?? (admin ? undefined : 'news');
+    if (admin) return selected
+      ? await this.sql`SELECT * FROM announcements WHERE kind=${selected} ORDER BY created_at DESC, id DESC`
+      : await this.sql`SELECT * FROM announcements ORDER BY created_at DESC, id DESC`;
+    return await this.sql`SELECT * FROM announcements WHERE state='published' AND kind=${selected} ORDER BY published_at DESC, id DESC`;
   }
   async get(id: string, admin = false): Promise<Announcement | undefined> {
     const rows = admin
-      ? await this.sql`SELECT * FROM announcements WHERE id = ${id}`
-      : await this
-          .sql`SELECT * FROM announcements WHERE id = ${id} AND state = 'published'`;
+      ? await this.sql`SELECT * FROM announcements WHERE id=${id}`
+      : await this.sql`SELECT * FROM announcements WHERE id=${id} AND state='published'`;
     return rows[0];
   }
   async save(input: {
-    id?: string;
-    title: string;
-    body: string;
-    state: string;
+    id?: string; title: string; body: string; state: string; kind?: string;
+    format?: string; author?: string; category?: string; project?: string; tags?: string; summary?: string;
   }) {
-    const id = input.id ?? crypto.randomUUID(),
-      now = Date.now();
-    if (
-      !input.title.trim() ||
-      input.title.length > 160 ||
-      !input.body.trim() ||
-      input.body.length > 30000 ||
-      !["draft", "published"].includes(input.state)
-    )
-      throw new ValidationError(
-        "Enter a title (up to 160 characters), body (up to 30,000 characters), and valid publication state.",
-      );
-    return this.sql.begin(async (tx) => {
+    const id = input.id ?? crypto.randomUUID(), now = Date.now();
+    const old = input.id ? await this.get(input.id, true) : undefined;
+    if (input.id && !old) throw new ValidationError('Announcement not found.');
+    const kind = input.kind ?? old?.kind ?? 'news', format = input.format ?? old?.format ?? 'plain';
+    const author = (input.author ?? old?.author ?? '2010scape team').trim();
+    const category = (input.category ?? old?.category ?? 'Game Updates').trim();
+    const project = (input.project ?? old?.project ?? 'Development').trim();
+    const tags = (input.tags ?? old?.tags ?? '').trim(), summary = (input.summary ?? old?.summary ?? '').trim();
+    if (!input.title.trim() || input.title.length > 160 || !input.body.trim() || input.body.length > 30000
+      || !['draft','published'].includes(input.state) || !['news','devblog'].includes(kind)
+      || !['plain','markdown'].includes(format) || author.length > 80 || category.length > 80
+      || project.length > 100 || tags.length > 300 || summary.length > 500)
+      throw new ValidationError('Enter a title (up to 160 characters), body (up to 30,000 characters), and valid publication and formatting settings.');
+    return sqlTransaction(this.sql, async tx => {
       if (input.id) {
-        const old = (await tx`SELECT * FROM announcements WHERE id = ${id}`)[0];
-        if (!old) throw new ValidationError("Announcement not found.");
-        const published =
-          input.state === "published" ? (old.published_at ?? now) : null;
-        await tx`UPDATE announcements SET title=${input.title.trim()}, body=${input.body.trim()}, state=${input.state}, updated_at=${now}, published_at=${published} WHERE id=${id}`;
+        const current = (await tx`SELECT * FROM announcements WHERE id=${id}`)[0];
+        if (!current) throw new ValidationError('Announcement not found.');
+        const published = input.state === 'published' ? (current.published_at ?? now) : null;
+        await tx`UPDATE announcements SET title=${input.title.trim()},body=${input.body.trim()},state=${input.state},updated_at=${now},published_at=${published},kind=${kind},format=${format},author=${author},category=${category},project=${project},tags=${tags},summary=${summary} WHERE id=${id}`;
       } else {
-        await tx`INSERT INTO announcements VALUES (${id}, ${input.title.trim()}, ${input.body.trim()}, ${input.state}, ${now}, ${now}, ${input.state === "published" ? now : null})`;
+        await tx`INSERT INTO announcements (id,title,body,state,created_at,updated_at,published_at,kind,format,author,category,project,tags,summary) VALUES (${id},${input.title.trim()},${input.body.trim()},${input.state},${now},${now},${input.state==='published'?now:null},${kind},${format},${author},${category},${project},${tags},${summary})`;
       }
       return id;
     });

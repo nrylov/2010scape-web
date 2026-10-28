@@ -185,7 +185,9 @@ describe("archived website adapter", () => {
     expect(home).toContain('href="/status"');
     expect(home).toContain('href="/play"');
     expect(home).toContain('href="/admin"');
-    expect(home).toContain('href="/news"');
+    expect(home).toContain('href="/forums"');
+    expect(home).toContain('<span class="ts">Community</span>');
+    expect(home).not.toContain('<span class="ts">News</span>');
     expect(home).toContain('href="/archive/www.runescape.com/guide/page.html"');
     expect(home).toContain(
       'href="/archive/services.runescape.com/m%3dnews/story.html"',

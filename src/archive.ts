@@ -1,3 +1,5 @@
+import type { Announcement, PostKind } from "./store";
+import { contentExcerpt } from "./richtext";
 import { realpath, readFile, stat } from "node:fs/promises";
 import { resolve, relative, extname, sep, isAbsolute } from "node:path";
 
@@ -45,6 +47,15 @@ const escaped = (value: string) =>
 const contained = (root: string, file: string) => {
   const path = relative(root, file);
   return path !== ".." && !path.startsWith(".." + sep) && !isAbsolute(path);
+};
+
+const editorialDate = (stamp:number) => new Date(Number(stamp)).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'}).replaceAll(' ','-');
+const CATEGORIES = ['Game Updates','Website Updates','Customer Support','Technical','Community','Behind the Scenes'];
+const newsIcon = (category:string) => ({'Game Updates':'mini_game_updates.gif','Website Updates':'mini_website.gif','Customer Support':'mini_customer_support.gif','Technical':'mini_technical.gif','Community':'mini_community.gif','Behind the Scenes':'mini_behind_the_scenes.gif'}[category] ?? 'mini_all_categories.gif');
+const newsCategories = () => ['All Categories',...CATEGORIES].map(category=>`<span class="newsNavcat"><img src="/archive/www.runescape.com/img/news/${newsIcon(category)}" alt="">&nbsp;<a class="white" href="/news${category==='All Categories'?'':'?category='+encodeURIComponent(category)}">${escaped(category)}</a></span>`).join(' ')+'<br><hr>';
+const editorialPager = (base:string,options:{page:number;pages:number;category?:string;author?:string;project?:string;tag?:string}) => {
+ const href=(page:number)=>{const query=new URLSearchParams();for(const key of ['category','author','project','tag'] as const)if(options[key])query.set(key,options[key]!);query.set('page',String(page));return base+'?'+escaped(query.toString());};
+ return `<nav class="editorial-pagination" aria-label="Pages">${options.page>1?`<a href="${href(options.page-1)}">‹ Previous</a>`:''} <span>Page ${options.page} of ${options.pages}</span> ${options.page<options.pages?`<a href="${href(options.page+1)}">Next ›</a>`:''}</nav>`;
 };
 
 export class ArchiveSite {
@@ -124,6 +135,13 @@ export class ArchiveSite {
       )
         return undefined;
       if (blocked.test(decoded)) return undefined;
+      if (targetHost === 'services.runescape.com') {
+        if (/^\/m=itemdb_rs\/frontpage[^/]*\.html$/.test(decoded)) return '/grand-exchange';
+        if (/^\/m=hiscore\/hiscores\.html$/.test(decoded)) return '/hiscores';
+        if (/^\/m=news\/(?:index|list)\.html$/.test(decoded)) return '/news';
+        if (/^\/m=devblog\/index\.html$/.test(decoded)) return '/devblog';
+        if (/^\/m=forum\/(?:index|forums)\.html$/.test(decoded)) return '/forums';
+      }
       return "/archive/" + targetHost + targetPath + hash;
     } catch {
       return undefined;
@@ -238,7 +256,7 @@ export class ArchiveSite {
           element.setAttribute("href", "/");
         },
       })
-      .on("#play,#playExisting,#bannerPlay,#banner .bannerLink", {
+      .on("#play,#playExisting,#bannerPlay,#playBannerNoad,#banner .bannerLink", {
         element(element) {
           element.setAttribute("href", "/play");
         },
@@ -250,12 +268,12 @@ export class ArchiveSite {
       })
       .on("#community", {
         element(element) {
-          element.setAttribute("href", "/news");
+          element.setAttribute("href", "/forums");
         },
       })
       .on("#community > .ts", {
         element(element) {
-          element.setInnerContent("News");
+          element.setInnerContent("Community");
         },
       })
       .on("#players", {
@@ -336,6 +354,56 @@ export class ArchiveSite {
       })
       .transform(new Response(clean))
       .text();
+  }
+  /** Sanitized original page for live features which replace its historical content. */
+  async template(host: string, path: string): Promise<string | undefined> {
+    if (!hosts.has(host) || !/\.html?$/.test(path) || path.split('/').some(part => part === '..' || part === '.')) return undefined;
+    try {
+      const file = await realpath(resolve(this.root, host, path));
+      if (!contained(this.root, file)) return undefined;
+      return this.sanitize(latin1.decode(await readFile(file)), host, path);
+    } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined; throw error; }
+  }
+  async renderEditorial(row: Announcement, body: string, navigation = ''): Promise<string | undefined> {
+    const blog = row.kind === 'devblog';
+    const path = blog ? 'm=devblog/view_postfe29.html' : 'm=news/newsitemc007.html';
+    const clean = await this.template('services.runescape.com', path)
+      ?? (!blog ? await this.template('services.runescape.com', 'm=news/newsitem13fe.html') : undefined);
+    if (!clean) return undefined;
+    const stamp = editorialDate(row.published_at!), title = escaped(row.title);
+    const metadata = blog ? `<div id="archives"><a href="/devblog">&lt; Back to archive</a></div><h2>${title}<br>by ${escaped(row.author)} ${stamp}</h2><div class="content editorial-body">${body}</div><br class="clear"><div id="meta">Project: ${escaped(row.project)}<br>Tags: ${escaped(row.tags)}</div>` : body;
+    return new HTMLRewriter()
+      .on('title', {element(e) {e.setInnerContent(`${title} - 2010scape`, {html:true});}})
+      .on('body', {element(e) {e.setAttribute('class', `${e.getAttribute('class') ?? ''} site-editorial-page`);}})
+      .on('.navigation .location', {element(e) {e.setInnerContent(`<b>Location: </b><a href="/">Home</a> &gt; <a href="${blog ? '/devblog' : '/news'}">${blog ? 'Developer Blogs' : 'News List'}</a> &gt; ${title}`, {html:true});}})
+      .on('.adframe,#feed,#bookmark', {element(e) {e.remove();}})
+      .on('#newsitemMenu', {element(e) {e.setInnerContent(newsCategories(), {html:true});}})
+      .on('#newsTitle', {element(e) {e.setInnerContent(`${navigation}<b>${stamp} - ${title}</b>`, {html:true});}})
+      .on('.newsJustify', {element(e) {e.setAttribute('class','newsJustify editorial-body');e.setInnerContent(metadata, {html:true});}})
+      .on('#post .devblogFoot', {element(e) {e.setInnerContent(metadata, {html:true});}})
+      .on('h1.plaque', {element(e) {if(blog)e.setInnerContent(title,{html:true});}})
+      .transform(new Response(clean)).text();
+  }
+  async renderEditorialList(kind: PostKind, rows: Announcement[], options: {page:number; pages:number; category?:string; author?:string; project?:string; tag?:string; all:Announcement[]}): Promise<string | undefined> {
+    const blog = kind === 'devblog', path = blog ? 'm=devblog/index.html' : 'm=news/list.html';
+    const clean = await this.template('services.runescape.com',path);
+    if (!clean) return undefined;
+    const title = blog ? "Developers' Blogs" : 'Latest News';
+    const base = blog ? '/devblog' : '/news';
+    const pagination = editorialPager(base,options);
+    const entries = blog ? rows.map(row => `<div class="listPost"><h3><span class="postDetails"><a class="postTitle" href="/devblog/${escaped(row.id)}">${escaped(row.title)}</a> by <a class="postAuthor" href="/devblog?author=${encodeURIComponent(row.author)}">${escaped(row.author)}</a></span><span class="postDate">${editorialDate(row.published_at!)}</span></h3><div class="postImage"><img src="/archive/services.runescape.com/m%3ddevblog/images/icon/dev.png" alt="Development"></div><p>${escaped(row.summary || contentExcerpt(row.body))} <a href="/devblog/${escaped(row.id)}">Read&nbsp;More</a></p><div class="postMeta"><b>Project:</b> <a href="/devblog?project=${encodeURIComponent(row.project)}">${escaped(row.project)}</a><br><b>Tags:</b> ${row.tags.split(',').filter(tag=>tag.trim()).map(tag=>`<a href="/devblog?tag=${encodeURIComponent(tag.trim())}">${escaped(tag.trim())}</a>`).join(', ')}</div></div>`).join('') || '<p class="editorial-empty">No developer posts have been published yet.</p>'
+      : '<tr class="row_a"><td width="30%" id="titleCat"><b>Category</b></td><td width="50%" id="titleTitle"><b>News Item</b></td><td width="20%" class="date"><b>Date</b></td></tr>' + (rows.map(row=>`<tr class="pad"><td><a class="catLink" href="/news?category=${encodeURIComponent(row.category)}"><img src="/archive/www.runescape.com/img/news/${newsIcon(row.category)}" alt=""><span>${escaped(row.category)}</span></a></td><td><a class="titleLink" href="/news/${escaped(row.id)}">${escaped(row.title)}</a></td><td class="date">${editorialDate(row.published_at!)}</td></tr>`).join('') || '<tr><td colspan="3">No news has been published yet.</td></tr>');
+    const select = (name:string,values:string[],selected='') => `<label>${name[0]!.toUpperCase()+name.slice(1)} <select name="${name}"><option value="">All</option>${[...new Set(values)].filter(Boolean).sort().map(value=>`<option value="${escaped(value)}"${selected===value?' selected':''}>${escaped(value)}</option>`).join('')}</select></label>`;
+    const filters = `<h3>Filter Posts</h3><form method="get" action="/devblog">${select('author',options.all.map(r=>r.author),options.author)}${select('project',options.all.map(r=>r.project),options.project)}${select('tag',options.all.flatMap(r=>r.tags.split(',').map(tag=>tag.trim())),options.tag)}<button type="submit">Filter</button></form>`;
+    return new HTMLRewriter()
+      .on('title',{element(e){e.setInnerContent(`${escaped(title)} - 2010scape`,{html:true});}})
+      .on('body',{element(e){e.setAttribute('class',`${e.getAttribute('class')??''} site-editorial-page`);}})
+      .on('#newsitemMenu',{element(e){e.setInnerContent(newsCategories(),{html:true});}})
+      .on('#newsList,#list',{element(e){e.setInnerContent(entries,{html:true});}})
+      .on('#feed',{element(e){e.remove();}})
+      .on('.topnav,.bottomnav,.navArrows',{element(e){e.replace(pagination,{html:true});}})
+      .on('#filter',{element(e){e.setInnerContent(filters,{html:true});}})
+      .transform(new Response(clean)).text();
   }
   async serve(request: Request): Promise<Response | undefined> {
     const url = new URL(request.url);
