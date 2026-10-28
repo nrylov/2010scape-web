@@ -122,3 +122,9 @@ pod. The owner confirmed the deployed site opens in their browser. Attempts from
 this agent's browser/HTTP tools failed to resolve or connect to the Service;
 that tool-access limitation is not evidence of a website/OrbStack outage. No
 networking configuration was changed in response.
+
+Developer-blog follow-up image: `2010scape-web:website-20261028-3` repairs the
+original filter form and native filter controls. After the owner enabled macOS
+Local Network access, host HTTP and in-app browser access by Service IP worked;
+the browser's service-hostname DNS lookup remained unavailable. The deployed
+blog has no published developer posts; preview articles were not production data.

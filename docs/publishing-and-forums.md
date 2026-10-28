@@ -57,3 +57,11 @@ forum boards/threads, administrator login, and article/forum formatting previews
 This does not claim an automated pixel-by-pixel comparison or verification at
 every mobile viewport. Saved article layouts use the actual reference files;
 new editor and moderation controls are application additions.
+
+Follow-up audit: the deployed blog index was empty because it had no published
+developer posts; test articles had existed only in the isolated preview. The
+original archive's filter is a form, not a div. Its live replacement now replaces
+the entire inert archive form, avoiding disabled/nested forms, and retains the
+original author/project/tag layout and Filter Posts image button. Regression
+coverage includes filtering published posts and verifying a usable single form.
+Website checks passed (40 local tests, including deferred uncommitted auth tests).

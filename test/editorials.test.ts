@@ -14,7 +14,7 @@ async function fixture(){
  await writeFile(join(root,'services.runescape.com/m=news/newsitemc007.html'),page('<div id="newsitemMenu"></div><div id="newsTitle">Historical title</div><div class="adframe">Advertising</div><div class="newsJustify">Historical article</div>'));
  await writeFile(join(root,'services.runescape.com/m=news/list.html'),page('<div id="newsitemMenu"></div><table id="newsList"><tr><td>Historical list</td></tr></table><div class="bottomnav">Page1of51</div>'));
  await writeFile(join(root,'services.runescape.com/m=devblog/view_postfe29.html'),page('<div id="post"><div class="devblog"><div class="devblogHead"><div class="devblogFoot">Historical developer article</div></div></div></div>'));
- await writeFile(join(root,'services.runescape.com/m=devblog/index.html'),page('<form class="navArrows">Oldpages</form><div id="list">Historical developer list</div><div id="filter">Oldfilters</div>'));
+ await writeFile(join(root,'services.runescape.com/m=devblog/index.html'),page('<form class="navArrows">Oldpages</form><div id="list">Historical developer list</div><form id="filter" action="https://historical.invalid" method="get">Oldfilters</form>'));
  const app=await createApp({databaseUrl:':memory:',archiveRoot:root,adminPassword:'editor password'});apps.push(app);return app;
 }
 const request=(path:string,cookie?:string,form?:Record<string,string>)=>new Request('http://localhost'+path,{method:form?'POST':'GET',headers:{...(cookie?{cookie}:{}),...(form?{'content-type':'application/x-www-form-urlencoded',origin:'http://localhost'}:{})},body:form?new URLSearchParams(form):undefined});
@@ -61,4 +61,15 @@ test('invalid publication preserves the author’s unsaved text and post setting
  const app=await fixture(),auth=await login(app);
  const response=await app.handle(request('/admin/announcements',auth.cookie,{csrf:auth.csrf,title:'',body:'An **unfinished** article',state:'draft',kind:'devblog',format:'markdown',author:'Writer',project:'World',tags:'test',summary:'Draft summary'}));
  expect(response.status).toBe(400);const html=await response.text();expect(html).toContain('An **unfinished** article');expect(html).toContain('Draft summary');expect(html).toContain('value="devblog" selected');expect(html).toContain('action="/admin/announcements"');
+});
+
+test('developer blog filters replace the disabled archived form and retain original control layout',async()=>{
+ const app=await fixture();
+ await app.store.save({title:'Skill blog',body:'Skill work',state:'published',kind:'devblog',author:'Writer',project:'Skills',tags:'development'});
+ await app.store.save({title:'Quest blog',body:'Quest work',state:'published',kind:'devblog',author:'Other',project:'Quests',tags:'quests'});
+ const html=await(await app.handle(request('/devblog?project=Skills'))).text();
+ expect(html).toContain('Skill blog');expect(html).not.toContain('Quest blog');
+ const filter=html.match(/<form id="filter"[\s\S]*?<\/form>/)![0];
+ expect(filter).toContain('action="/devblog"');expect(filter).not.toContain('inert');expect(filter).not.toContain('disabled');expect(filter.match(/<form/g)).toHaveLength(1);
+ expect(filter).toContain('id="filterAuthor"');expect(filter).toContain('id="filterProject"');expect(filter).toContain('id="filterTag"');expect(filter).toContain('/img/devblog/filter.png');expect(filter).toContain('value="Skills" selected');
 });

@@ -12,3 +12,4 @@ This repository contains the TypeScript website for 2010scape. Use the actual or
 - Publishing and forums reuse the original news/devblog/forum templates. `/admin` supports Markdown formatting and previews; `/forums` currently uses the same single website administrator account for posting/moderation, with public reading/search. Do not read game character files from the website. An account database or external auth service is future work. See `docs/publishing-and-forums.md` for audited coverage and limits (2026-10-28).
 
 - `/grand-exchange` and `/hiscores` use original templates with labeled contrived data behind `PriceHistorySource` and `HiscoresProvider`. Live GE/history ingestion and hiscores data are deferred; see `docs/market-and-hiscores.md`.
+- Devblog filtering must replace the archived `form#filter` completely; do not inject another form inside it or preserve the archive sanitizer's inert/disabled state. Preserve original filter IDs and button art.
