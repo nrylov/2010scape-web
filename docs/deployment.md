@@ -139,3 +139,11 @@ outside the image. Local validation passed TypeScript and all 41 website tests;
 the captured inventory audit passed all 13,530 native page routes, and browser
 checks covered 16 page types at 320/390/600px with no document-wide overflow or
 missing images. The existing progress blog and database are preserved.
+
+The `website-20261028-4` rollout and expanded OrbStack verifier passed: native
+pages/assets, administrator auth/CSRF, draft publication, forum posting/preview,
+website replacement, PostgreSQL outage/recovery and persisted sessions/content.
+Temporary verifier content was removed. The owner's published progress blog was
+verified at its existing ID with native asset links, and the original Downloads
+URL was verified to redirect to `/downloads-and-wallpapers`. The game workload
+was not modified by this deployment.
