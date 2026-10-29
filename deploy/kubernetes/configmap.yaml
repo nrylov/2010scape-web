@@ -10,4 +10,5 @@ data:
   SESSION_COOKIE_SECURE: "true"
   # Leave optional integrations disabled until their real endpoints exist.
   GAME_STATUS_URL: ""
+  GAME_MARKET_URL: ""
   DOWNLOAD_URL: ""

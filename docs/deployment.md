@@ -18,7 +18,7 @@ Use a URL-safe password because Compose constructs a database URL from this valu
 
 `ADMIN_PASSWORD_HASH` enables administration with a hash produced by `Bun.password.hash`. `ADMIN_PASSWORD` is a local alternative. There is no built-in administrator password; without either value, administration remains disabled. When placing an Argon hash in a Compose `.env` file, single-quote the value so `$` characters remain literal. Do not commit the `.env` file.
 
-Compose sets `SESSION_COOKIE_SECURE=false` only for local HTTP. Production must use HTTPS and secure cookies. `GAME_STATUS_URL` and `DOWNLOAD_URL` are optional; leaving them empty keeps those integrations unavailable instead of inventing online status or a download.
+Compose sets `SESSION_COOKIE_SECURE=false` only for local HTTP. Production must use HTTPS and secure cookies. `GAME_STATUS_URL`, `GAME_MARKET_URL` and `DOWNLOAD_URL` are optional; leaving them empty keeps those integrations unavailable instead of inventing online status, live prices or a download. `GAME_MARKET_URL` is the game HTTP base URL; the website reads `/market` server-side, so the game port need not be public.
 
 The `postgres-data` named volume preserves announcements and sessions across container replacement. `docker compose down` keeps it; `docker compose down --volumes` removes the database. Back up the database independently of container images.
 

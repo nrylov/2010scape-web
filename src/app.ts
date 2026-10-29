@@ -1,5 +1,5 @@
 import { handleHiscores } from "./hiscores";
-import { handleExchange } from "./exchange";
+import { handleExchange, gameMarket, samplePrices } from "./exchange";
 import { createForum } from "./forum";
 import {renderContent, type ContentFormat} from "./richtext";
 import { Store, ValidationError } from "./store";
@@ -13,6 +13,7 @@ export interface Config {
   secureCookie?: boolean;
   siteOrigin?: string;
   gameStatusUrl?: string;
+  gameMarketUrl?: string;
   downloadUrl?: string;
   archiveRoot?: string;
 }
@@ -22,6 +23,7 @@ const token = () => crypto.randomUUID() + crypto.randomUUID();
 export async function createApp(config: Config = {}) {
   const store = await Store.open(config.databaseUrl);
   const archive = await ArchiveSite.load(config.archiveRoot);
+  const market = config.gameMarketUrl ? gameMarket(config.gameMarketUrl) : samplePrices;
   const adminEnabled = !!(config.adminPasswordHash || config.adminPassword);
   const passwordHash =
     config.adminPasswordHash ||
@@ -127,7 +129,7 @@ export async function createApp(config: Config = {}) {
       }
       const hiscoresResponse = await handleHiscores(req, archive);
       if (hiscoresResponse) return hiscoresResponse;
-      const exchangeResponse = await handleExchange(req, archive);
+      const exchangeResponse = await handleExchange(req, archive, market);
       if (exchangeResponse) return exchangeResponse;
       const forumResponse = await forum.handle(req, ip);
       if (forumResponse) return forumResponse;

@@ -45,6 +45,7 @@ for (const resource of resources) {
   if (resource.kind === "ConfigMap") Object.assign(resource.data, {
     SITE_ORIGIN: origin, SESSION_COOKIE_SECURE: "false", WEBSITE_ARCHIVE_ROOT: "/srv/website-reference",
     GAME_STATUS_URL: process.env.GAME_STATUS_URL || "http://2010scape-game:43595/status",
+    GAME_MARKET_URL: process.env.GAME_MARKET_URL || "http://2010scape-game:43595",
   });
   if (resource.kind === "Deployment") {
     resource.spec.replicas = 1;

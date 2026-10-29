@@ -42,7 +42,7 @@ Administration is disabled until configured. Set `ADMIN_PASSWORD` in your untrac
 
 News articles and `/news` lists use the original archived news templates (`newsitemc007.html`, with `newsitem13fe.html` as a fallback, and `list.html`). Developer articles and `/devblog` lists use the original `view_postfe29.html` and `index.html` templates, with author, project and tag metadata, filtering and pagination. The Community menu links to news, developer blogs and forums. These live pages require the corresponding extracted archive files for their original layouts; without them a basic application page remains available.
 
-`DOWNLOAD_URL` enables a real client download. `GAME_STATUS_URL` optionally points to an HTTP JSON endpoint such as `{ "online": true, "players": 12 }`. Missing or unavailable monitoring reports unknown status. Game accounts remain managed by the game server.
+`DOWNLOAD_URL` enables a real client download. `GAME_STATUS_URL` optionally points to an HTTP JSON endpoint such as `{ "online": true, "players": 12 }`. Missing or unavailable monitoring reports unknown status. `GAME_MARKET_URL` points to the game HTTP base URL (e.g. `http://127.0.0.1:43595`) for live Grand Exchange prices; without it the GE pages show labeled sample data. See [market notes](docs/market-and-hiscores.md). Game accounts remain managed by the game server.
 
 ## Verify and deploy
 

@@ -8,6 +8,7 @@ const app = await createApp({
     : process.env.NODE_ENV === "production",
   siteOrigin: process.env.SITE_ORIGIN,
   gameStatusUrl: process.env.GAME_STATUS_URL,
+  gameMarketUrl: process.env.GAME_MARKET_URL,
   downloadUrl: process.env.DOWNLOAD_URL,
   archiveRoot: process.env.WEBSITE_ARCHIVE_ROOT,
 });

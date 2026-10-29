@@ -644,8 +644,8 @@ body.site-app-page #right {
   .site-editorial-page #filter label { display:flex; align-items:center; gap:6px; }
 }
 .editorial-editor textarea[name="summary"] { min-height:70px; }
-.exchange-page #ticker{height:auto;min-height:24px;padding:5px;box-sizing:border-box}.exchange-page .exchange-graph{max-width:100%;height:auto}.exchange-page #item_graph_image{max-width:100%}
-@media(max-width:780px){.exchange-page #browsebox{display:none}.exchange-page .main_ge_page{width:100%;float:none;box-sizing:border-box}.exchange-page #item_graph_image{width:100%;table-layout:fixed}.exchange-page #item_graph_image td{padding:0}.exchange-page #legend{float:none;width:auto}.exchange-page #item_graph_nav{width:auto}.exchange-page #searchbox{height:auto}.exchange-page #item_additional .spaced_span{display:inline-block;margin:6px}}
+.exchange-page #ticker{height:auto;min-height:24px;padding:5px;box-sizing:border-box}.exchange-page .exchange-graph{max-width:100%;height:auto}.exchange-page #item_graph_image{max-width:100%}.exchange-page .exchange-graph-notes{clear:both;padding-top:6px}
+@media(max-width:780px){.exchange-page #browsebox{display:none}.exchange-page .main_ge_page{width:100%;float:none;box-sizing:border-box}.exchange-page #item_graph_image{width:100%;table-layout:fixed}.exchange-page #item_graph_image td{padding:0}.exchange-page #legend{float:none;width:auto}.exchange-page #item_graph_nav{width:auto;height:auto;margin-top:8px}.exchange-page #content .main_ge_page .top5_table{display:table}.exchange-page #searchbox{height:auto}.exchange-page #item_additional .spaced_span{display:inline-block;margin:6px}}
 
 @media (max-width: 600px) {
   /* Keep the original one-line plaque artwork; full article titles remain in the body. */
