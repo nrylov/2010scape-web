@@ -17,7 +17,7 @@ optional list summary. Existing plain-text posts retain that format.
 
 The editor provides Bold, Italic, Heading, Link, Picture, List and Preview
 buttons. It edits Markdown source and renders a preview; it is not a WYSIWYG
-editor. Pictures accept HTTPS URLs and local archive paths, including inline
+editor. Pictures accept HTTPS URLs and local `/assets/...` paths (legacy archive paths are rewritten on render), including inline
 images within a paragraph. File uploads are not implemented. Raw HTML is
 escaped, and unsafe URL schemes cannot produce links or images. Validation
 errors preserve unsaved article text and metadata.

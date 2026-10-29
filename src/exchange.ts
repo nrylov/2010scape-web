@@ -9,7 +9,7 @@ export interface PriceHistorySource {
   items(): Promise<ExchangeItem[]>;
   history(itemId: number): Promise<PricePoint[]>;
 }
-const root='/archive/services.runescape.com/m%3ditemdb_rs/';
+const root='/assets/services/m%3ditemdb_rs/';
 const catalog: ExchangeItem[]=[
   {id:1333,name:'Rune scimitar',description:'A vicious, curved sword.',template:'Rune_scimitar/viewitem393a.html',image:'3059_obj_big8825.gif'},
   {id:1511,name:'Logs',description:'A pile of logs.',template:'Logs/viewitem3a37.html',image:'3059_obj_big4963.gif'},

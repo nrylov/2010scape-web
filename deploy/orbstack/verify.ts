@@ -54,7 +54,7 @@ let id: string | undefined;
 let forumId: string | undefined;
 let databaseStopped = false;
 try {
-  for (const path of ["/healthz", "/readyz", "/", "/news", "/devblog", "/forums", "/hiscores", "/grand-exchange", "/grand-exchange/items/1333/graph.svg?days=90", "/archive/www.runescape.com/css/global-34.css", "/archive/www.runescape.com/img/main/home/bannerLogoc4ca.jpg", "/archive/www.runescape.com/kbase/guid/manual.html"]) {
+  for (const path of ["/healthz", "/readyz", "/", "/news", "/devblog", "/downloads-and-wallpapers", "/forums", "/hiscores", "/grand-exchange", "/grand-exchange/items/1333/graph.svg?days=90", "/assets/site/css/global-34.css", "/assets/site/img/main/home/bannerLogoc4ca.jpg", "/game-guide"]) {
     const response = await request(path);
     check(response.status === 200, `${path} returns 200`);
     if (path === "/") check((await response.text()).includes('id="bannerLogo"'), "original archived homepage rendered");

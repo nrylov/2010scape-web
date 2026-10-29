@@ -1,8 +1,9 @@
+import {nativeLegacyUrl} from "./site-routes";
 /** Small Markdown dialect. Raw HTML is always text; every generated attribute is escaped. */
 const escape = (value: string) => value.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export type ContentFormat = 'plain' | 'markdown';
 export function safeContentUrl(value: string, image = false): string | undefined {
-  const url = value.trim();
+  const url = nativeLegacyUrl(value.trim()) ?? value.trim();
   if (!url || /[\u0000-\u0020\u007f\\]/.test(url)) return;
   if (url.startsWith('/') && !url.startsWith('//')) return url;
   if (!image && /^#[a-z0-9_-]+$/i.test(url)) return url;

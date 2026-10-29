@@ -1,6 +1,7 @@
+import {nativeSourcePath, SOURCE_BY_NAMESPACE} from "./site-routes";
 import type { Announcement, PostKind } from "./store";
 import { contentExcerpt } from "./richtext";
-import { realpath, readFile, stat } from "node:fs/promises";
+import { realpath, readFile, stat, readdir } from "node:fs/promises";
 import { resolve, relative, extname, sep, isAbsolute } from "node:path";
 
 // Archive-owned domains only: no social widgets, advertising CDNs or analytics.
@@ -51,14 +52,16 @@ const contained = (root: string, file: string) => {
 
 const editorialDate = (stamp:number) => new Date(Number(stamp)).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'}).replaceAll(' ','-');
 const CATEGORIES = ['Game Updates','Website Updates','Customer Support','Technical','Community','Behind the Scenes'];
-const newsIcon = (category:string) => ({'Game Updates':'mini_game_updates.gif','Website Updates':'mini_website.gif','Customer Support':'mini_customer_support.gif','Technical':'mini_technical.gif','Community':'mini_community.gif','Behind the Scenes':'mini_behind_the_scenes.gif'}[category] ?? 'mini_all_categories.gif');
-const newsCategories = () => ['All Categories',...CATEGORIES].map(category=>`<span class="newsNavcat"><img src="/archive/www.runescape.com/img/news/${newsIcon(category)}" alt="">&nbsp;<a class="white" href="/news${category==='All Categories'?'':'?category='+encodeURIComponent(category)}">${escaped(category)}</a></span>`).join(' ')+'<br><hr>';
+const newsIcon = (category:string) => ({'Game Updates':'mini_game_updates.gif','Website Updates':'mini_website.gif','Customer Support':'mini_customer_support.gif','Technical':'mini_technical.gif','Community':'mini_all_categories.gif','Behind the Scenes':'mini_behind_the_scenes.gif'}[category] ?? 'mini_all_categories.gif');
+const newsCategories = () => ['All Categories',...CATEGORIES].map(category=>`<span class="newsNavcat"><img src="/assets/site/img/news/${newsIcon(category)}" alt="">&nbsp;<a class="white" href="/news${category==='All Categories'?'':'?category='+encodeURIComponent(category)}">${escaped(category)}</a></span>`).join(' ')+'<br><hr>';
 const editorialPager = (base:string,options:{page:number;pages:number;category?:string;author?:string;project?:string;tag?:string}) => {
  const href=(page:number)=>{const query=new URLSearchParams();for(const key of ['category','author','project','tag'] as const)if(options[key])query.set(key,options[key]!);query.set('page',String(page));return base+'?'+escaped(query.toString());};
  return `<nav class="editorial-pagination" aria-label="Pages">${options.page>1?`<a href="${href(options.page-1)}">‹ Previous</a>`:''} <span>Page ${options.page} of ${options.pages}</span> ${options.page<options.pages?`<a href="${href(options.page+1)}">Next ›</a>`:''}</nav>`;
 };
 
 export class ArchiveSite {
+  private readonly pageRoutes = new Map<string, {host:string;path:string}>();
+  private readonly sourceRoutes = new Map<string,string>();
   private constructor(
     readonly root: string,
     private readonly index: string,
@@ -72,14 +75,35 @@ export class ArchiveSite {
         resolve(canonical, "www.runescape.com/index.html"),
       );
       if (!contained(canonical, indexPath)) return undefined;
-      return new ArchiveSite(
-        canonical,
-        latin1.decode(await readFile(indexPath)),
-      );
+      const site = new ArchiveSite(canonical, latin1.decode(await readFile(indexPath)));
+      await site.indexPages();
+      return site;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
       throw error;
     }
+  }
+  private async indexPages() {
+    for (const host of hosts) {
+      let entries;
+      try { entries=await readdir(resolve(this.root,host),{recursive:true,withFileTypes:true}); }
+      catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')continue;throw error;}
+      for (const entry of entries.filter(e=>e.isFile() && /\.html?$/i.test(e.name)).sort((a,b)=>(a.parentPath+'/'+a.name)<(b.parentPath+'/'+b.name)?-1:1)) {
+        const path=relative(resolve(this.root,host),resolve(entry.parentPath,entry.name)).split(sep).join('/');
+        if(blocked.test(path))continue;
+        const base=nativeSourcePath(host,path);
+        // Live application pages have their own renderers, and take precedence.
+        if(['/', '/play','/news','/devblog','/forums','/grand-exchange','/hiscores'].includes(base)) {this.sourceRoutes.set(host+'/'+path,base);continue;}
+        let route=base;
+        if(this.pageRoutes.has(route))route=base+'-'+new Bun.CryptoHasher('sha256').update(host+'/'+path).digest('hex').slice(0,12);
+        this.pageRoutes.set(route,{host,path});this.sourceRoutes.set(host+'/'+path,route);
+      }
+    }
+  }
+  /** Canonical route inventory used by the link audit; source files remain private. */
+  nativePages(){return [...this.pageRoutes.keys()];}
+  private canonical(host:string,path:string){
+    return this.sourceRoutes.get(host+'/'+path) ?? this.sourceRoutes.get(host+'/'+path.replace(/\.ws$/i,'.html')) ?? this.sourceRoutes.get(host+'/'+path+'.html') ?? nativeSourcePath(host,path);
   }
   /** Resolve the mirror's relative cross-host links without ever producing a remote URL. */
   private url(value: string, host: string, path: string): string | undefined {
@@ -135,14 +159,7 @@ export class ArchiveSite {
       )
         return undefined;
       if (blocked.test(decoded)) return undefined;
-      if (targetHost === 'services.runescape.com') {
-        if (/^\/m=itemdb_rs\/frontpage[^/]*\.html$/.test(decoded)) return '/grand-exchange';
-        if (/^\/m=hiscore\/hiscores\.html$/.test(decoded)) return '/hiscores';
-        if (/^\/m=news\/(?:index|list)\.html$/.test(decoded)) return '/news';
-        if (/^\/m=devblog\/index\.html$/.test(decoded)) return '/devblog';
-        if (/^\/m=forum\/(?:index|forums)\.html$/.test(decoded)) return '/forums';
-      }
-      return "/archive/" + targetHost + targetPath + hash;
+      return this.canonical(targetHost,decoded.replace(/^\//,'')) + hash;
     } catch {
       return undefined;
     }
@@ -391,10 +408,10 @@ export class ArchiveSite {
     const title = blog ? "Developers' Blogs" : 'Latest News';
     const base = blog ? '/devblog' : '/news';
     const pagination = editorialPager(base,options);
-    const entries = blog ? rows.map(row => `<div class="listPost"><h3><span class="postDetails"><a class="postTitle" href="/devblog/${escaped(row.id)}">${escaped(row.title)}</a> by <a class="postAuthor" href="/devblog?author=${encodeURIComponent(row.author)}">${escaped(row.author)}</a></span><span class="postDate">${editorialDate(row.published_at!)}</span></h3><div class="postImage"><img src="/archive/services.runescape.com/m%3ddevblog/images/icon/dev.png" alt="Development"></div><p>${escaped(row.summary || contentExcerpt(row.body))} <a href="/devblog/${escaped(row.id)}">Read&nbsp;More</a></p><div class="postMeta"><b>Project:</b> <a href="/devblog?project=${encodeURIComponent(row.project)}">${escaped(row.project)}</a><br><b>Tags:</b> ${row.tags.split(',').filter(tag=>tag.trim()).map(tag=>`<a href="/devblog?tag=${encodeURIComponent(tag.trim())}">${escaped(tag.trim())}</a>`).join(', ')}</div></div>`).join('') || '<p class="editorial-empty">No developer posts have been published yet.</p>'
-      : '<tr class="row_a"><td width="30%" id="titleCat"><b>Category</b></td><td width="50%" id="titleTitle"><b>News Item</b></td><td width="20%" class="date"><b>Date</b></td></tr>' + (rows.map(row=>`<tr class="pad"><td><a class="catLink" href="/news?category=${encodeURIComponent(row.category)}"><img src="/archive/www.runescape.com/img/news/${newsIcon(row.category)}" alt=""><span>${escaped(row.category)}</span></a></td><td><a class="titleLink" href="/news/${escaped(row.id)}">${escaped(row.title)}</a></td><td class="date">${editorialDate(row.published_at!)}</td></tr>`).join('') || '<tr><td colspan="3">No news has been published yet.</td></tr>');
+    const entries = blog ? rows.map(row => `<div class="listPost"><h3><span class="postDetails"><a class="postTitle" href="/devblog/${escaped(row.id)}">${escaped(row.title)}</a> by <a class="postAuthor" href="/devblog?author=${encodeURIComponent(row.author)}">${escaped(row.author)}</a></span><span class="postDate">${editorialDate(row.published_at!)}</span></h3><div class="postImage"><img src="/assets/services/m%3ddevblog/images/icon/dev.png" alt="Development"></div><p>${escaped(row.summary || contentExcerpt(row.body))} <a href="/devblog/${escaped(row.id)}">Read&nbsp;More</a></p><div class="postMeta"><b>Project:</b> <a href="/devblog?project=${encodeURIComponent(row.project)}">${escaped(row.project)}</a><br><b>Tags:</b> ${row.tags.split(',').filter(tag=>tag.trim()).map(tag=>`<a href="/devblog?tag=${encodeURIComponent(tag.trim())}">${escaped(tag.trim())}</a>`).join(', ')}</div></div>`).join('') || '<p class="editorial-empty">No developer posts have been published yet.</p>'
+      : '<tr class="row_a"><td width="30%" id="titleCat"><b>Category</b></td><td width="50%" id="titleTitle"><b>News Item</b></td><td width="20%" class="date"><b>Date</b></td></tr>' + (rows.map(row=>`<tr class="pad"><td><a class="catLink" href="/news?category=${encodeURIComponent(row.category)}"><img src="/assets/site/img/news/${newsIcon(row.category)}" alt=""><span>${escaped(row.category)}</span></a></td><td><a class="titleLink" href="/news/${escaped(row.id)}">${escaped(row.title)}</a></td><td class="date">${editorialDate(row.published_at!)}</td></tr>`).join('') || '<tr><td colspan="3">No news has been published yet.</td></tr>');
     const select = (name:string,values:string[],selected='') => `<label>${name[0]!.toUpperCase()+name.slice(1)} <select name="${name}"><option value="">All</option>${[...new Set(values)].filter(Boolean).sort().map(value=>`<option value="${escaped(value)}"${selected===value?' selected':''}>${escaped(value)}</option>`).join('')}</select></label>`;
-    const filters = `<h3>Filter Posts</h3><div id="filterAuthor">${select('author',options.all.map(r=>r.author),options.author)}</div><div id="filterProject">${select('project',options.all.map(r=>r.project),options.project)}</div><div id="filterTag">${select('tag',options.all.flatMap(r=>r.tags.split(',').map(tag=>tag.trim())),options.tag)}</div><div id="filterButton"><button type="submit"><img src="/archive/www.runescape.com/img/devblog/filter.png" alt="Filter Posts"></button></div><br class="clear">`;
+    const filters = `<h3>Filter Posts</h3><div id="filterAuthor">${select('author',options.all.map(r=>r.author),options.author)}</div><div id="filterProject">${select('project',options.all.map(r=>r.project),options.project)}</div><div id="filterTag">${select('tag',options.all.flatMap(r=>r.tags.split(',').map(tag=>tag.trim())),options.tag)}</div><div id="filterButton"><button type="submit"><img src="/assets/site/img/devblog/filter.png" alt="Filter Posts"></button></div><br class="clear">`;
     return new HTMLRewriter()
       .on('title',{element(e){e.setInnerContent(`${escaped(title)} - 2010scape`,{html:true});}})
       .on('body',{element(e){e.setAttribute('class',`${e.getAttribute('class')??''} site-editorial-page`);}})
@@ -407,7 +424,10 @@ export class ArchiveSite {
   }
   async serve(request: Request): Promise<Response | undefined> {
     const url = new URL(request.url);
-    if (!url.pathname.startsWith("/archive/")) return undefined;
+    const legacy=url.pathname.startsWith('/archive/');
+    const nativePage=this.pageRoutes.get(url.pathname);
+    const asset=/^\/assets\/([^/]+)\/(.+)$/.exec(url.pathname);
+    if(!legacy&&!nativePage&&!asset)return undefined;
     const missing = () =>
       new Response("Archived file not available", {
         status: 404,
@@ -423,7 +443,7 @@ export class ArchiveSite {
       });
     let decoded: string;
     try {
-      decoded = decodeURIComponent(url.pathname.slice(9));
+      decoded = nativePage ? nativePage.host+'/'+nativePage.path : asset ? (SOURCE_BY_NAMESPACE[asset[1]!]??'invalid')+'/'+decodeURIComponent(asset[2]!) : decodeURIComponent(url.pathname.slice(9));
     } catch {
       return missing();
     }
@@ -437,6 +457,10 @@ export class ArchiveSite {
       blocked.test(parts.join("/"))
     )
       return missing();
+    if(legacy){
+      const canonical=this.canonical(host,parts.join('/'));
+      if(this.pageRoutes.has(canonical)||['/play','/forums','/news','/devblog','/grand-exchange','/hiscores'].includes(canonical))return new Response(null,{status:308,headers:{Location:canonical+url.search,'Cache-Control':'public,max-age=3600'}});
+    }
     try {
       const hostRoot = await realpath(resolve(this.root, host));
       if (!contained(this.root, hostRoot)) return missing();
@@ -453,6 +477,7 @@ export class ArchiveSite {
         return missing();
       const extension = extname(file).toLowerCase();
       const relativePath = relative(hostRoot, file).split(sep).join("/");
+      if(legacy || (asset && ['.html','.htm'].includes(extension)))return new Response(null,{status:308,headers:{Location:this.canonical(host,relativePath)+url.search,"Cache-Control":"public,max-age=3600"}});
       const headers: Record<string, string> = {
         "X-Content-Type-Options": "nosniff",
         "Cache-Control": "public, max-age=3600",
@@ -462,24 +487,20 @@ export class ArchiveSite {
       if (extension === ".html" || extension === ".htm") {
         headers["Content-Type"] = "text/html; charset=utf-8";
         headers["Cache-Control"] = "no-store";
+        if(request.method==='HEAD')return new Response(null,{headers});
         const html = await this.sanitize(
           latin1.decode(await readFile(file)),
           host,
           relativePath,
-          true,
+          false,
         );
-        return new Response(request.method === "HEAD" ? null : html, {
+        return new Response(html, {
           headers,
         });
       }
       if (extension === ".css") {
         headers["Content-Type"] = "text/css; charset=utf-8";
-        return new Response(
-          request.method === "HEAD"
-            ? null
-            : this.css(latin1.decode(await readFile(file)), host, relativePath),
-          { headers },
-        );
+        return new Response(request.method==='HEAD'?null:this.css(latin1.decode(await readFile(file)),host,relativePath),{headers});
       }
       return new Response(request.method === "HEAD" ? null : Bun.file(file), {
         headers,

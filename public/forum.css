@@ -7,3 +7,65 @@
 .forum-account-page #login_background{height:auto;min-height:0;padding:18px 0}.forum-account-page #login_panel{padding:0}.forum-account-page #login_panel .forum-account-content p{margin:0 0 14px}.forum-account-page #login_panel label{font-size:14px}.forum-account-page #login_panel input{padding:5px;width:100%;background:#e9dfc5;color:#241b0e;border:1px solid #8d7753}.forum-account-page #login_panel button{padding:6px 16px}.forum-account-page .buttons{height:auto;max-width:100%;box-sizing:border-box;padding:8px;text-align:center}.forum-account-page .buttons a{width:auto;height:auto}.forum-account-page #warning{display:none}@media(max-width:700px){.forum-account-page #login_background,.forum-account-page #login_panel{width:100%!important}.forum-account-page #article{overflow-wrap:anywhere}}
 .forum-app button.buttonsmall{display:inline-block;float:none;background:linear-gradient(#655432,#33250d);border:1px solid #9d895e;color:#eadbc1;font:12px/18px Arial,sans-serif;text-indent:0;text-align:center;overflow:visible;box-sizing:border-box;min-width:76px}
 .forum-app .editor-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}.forum-app .editor-preview{border:1px solid #a18c6d;padding:14px;margin:12px 0;text-align:left}.forum-app .editor-preview[hidden]{display:none}
+
+/* Keep the archived forum chrome while giving long content local room to
+   scroll on phones instead of widening the whole page. */
+@media (max-width: 600px) {
+  .forum-app #content,
+  .forum-app #article,
+  .forum-app #content_forum,
+  .forum-app #contentmsg,
+  .forum-app #contentfrm,
+  .forum-app .section,
+  .forum-app .brown_background,
+  .forum-app .forum-compose,
+  .forum-account-content {
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .forum-app #content { padding-inline: 6px; }
+  .forum-app .group,
+  .forum-app .message,
+  .forum-app .forum-log {
+    width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
+  }
+
+  .forum-app #content_forum,
+  .forum-app #contentmsg,
+  .forum-app #contentfrm,
+  .forum-app .forum-log-wrap {
+    overflow-x: auto;
+  }
+
+  .forum-app .forum-compose input,
+  .forum-app .forum-compose select,
+  .forum-app .forum-compose textarea,
+  .forum-account-content input {
+    width: 100%;
+    max-width: 100%;
+    min-height: 42px;
+    box-sizing: border-box;
+  }
+
+  .forum-app .forum-compose textarea { min-height: 180px; }
+  .forum-app .forum-button,
+  .forum-app button.buttonsmall { min-height: 40px; }
+  .forum-app .message .leftpanel { width: 72px !important; }
+  .forum-app .message .rightpanel { min-width: 0; }
+  .forum-app .forum-richtext pre { max-width: 100%; }
+  .forum-app .forum-richtext img { max-width: 100%; }
+  .forum-app .forum-format-help { overflow-wrap: anywhere; }
+  .forum-account-page #login_panel .forum-account-content { padding: 14px; }
+}
+
+@media (max-width: 360px) {
+  .forum-app #content { padding-inline: 3px; }
+  .forum-app .forum-pages { margin-inline: 3px; }
+  .forum-app .message .leftpanel { width: 60px !important; }
+  .forum-app .forum-action { margin-inline: 1px; }
+  .forum-account-content { padding: 12px; }
+}

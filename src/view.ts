@@ -53,7 +53,7 @@ export function editor(csrf: string, row?: Announcement, error = "", submitted?:
 <label>Formatting<select name="format">${option('markdown',row?.format??'markdown','Rich formatting (Markdown)')}${option('plain',row?.format,'Plain text')}</select></label>
 <div class="editor-toolbar" role="toolbar" aria-label="Formatting"><button type="button" data-format="bold">Bold</button><button type="button" data-format="italic">Italic</button><button type="button" data-format="heading">Heading</button><button type="button" data-format="link">Link</button><button type="button" data-format="image">Picture</button><button type="button" data-format="list">List</button><button type="button" data-preview>Preview</button></div>
 <label>Body<textarea id="post-body" name="body" rows="16" maxlength="30000" required>${escape(row?.body)}</textarea></label>
-<p class="hint">Use **bold**, *italic*, ## headings, [links](https://example.com), and ![picture description](https://example.com/image.png). Pictures can also use local /archive/ URLs. HTML is displayed as text.</p>
+<p class="hint">Use **bold**, *italic*, ## headings, [links](https://example.com), and ![picture description](https://example.com/image.png). Pictures can also use local /assets/ URLs. HTML is displayed as text.</p>
 <div class="editor-preview editorial-body" aria-live="polite" hidden></div>
 <label>Publication<select name="state">${option('draft',row?.state??'draft','Draft — private')}${option('published',row?.state,'Published — public')}</select></label><button type="submit">Save post</button> <a href="/admin">Cancel</a></form><script src="/editor.js" defer></script></section>`;
 }

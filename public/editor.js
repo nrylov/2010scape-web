@@ -16,7 +16,7 @@ for (const form of document.querySelectorAll('.editorial-editor, .forum-compose-
         insertion = `[${selected || 'Link text'}](${url})`; break;
       }
       case 'image': {
-        const url = prompt('Picture URL (HTTPS or a local /archive/ image)', 'https://'); if (!url) return;
+        const url = prompt('Picture URL (HTTPS or a local /assets/ image)', 'https://'); if (!url) return;
         const alt = prompt('Describe the picture', selected || '') ?? '';
         insertion = `![${alt}](${url})`; break;
       }

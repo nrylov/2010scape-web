@@ -75,8 +75,8 @@ describe("archived website adapter", () => {
       expect(home).not.toContain("Old news");
       expect(home).not.toContain("104,681");
       expect(home).toContain("Game status: Unknown");
-      expect(home).toContain("/archive/www.runescape.com/css/global.css");
-      expect(home).toContain("/archive/www.runescape.com/img/banner.jpg");
+      expect(home).toContain("/assets/site/css/global.css");
+      expect(home).toContain("/assets/site/img/banner.jpg");
       const csp = response.headers.get("Content-Security-Policy")!;
       expect(csp).toContain("default-src 'none'");
       expect(csp).toContain("style-src 'self' 'unsafe-inline'");
@@ -93,7 +93,7 @@ describe("archived website adapter", () => {
         200,
       );
       const guide = await app.handle(
-        request("/archive/www.runescape.com/guide/page.html"),
+        request("/guide/page"),
       );
       expect(guide.status).toBe(200);
       expect(await guide.text()).toContain("Historical guide");
@@ -101,20 +101,20 @@ describe("archived website adapter", () => {
         "form-action 'none'",
       );
       const archivedNews = await app.handle(
-        request("/archive/services.runescape.com/m%3dnews/story.html"),
+        request("/news/history/story"),
       );
       expect(archivedNews.status).toBe(200);
       expect(await archivedNews.text()).toContain("Cross-host news");
       const css = await app.handle(
-        request("/archive/www.runescape.com/css/global.css"),
+        request("/assets/site/css/global.css"),
       );
       expect(css.status).toBe(200);
       expect(css.headers.get("Content-Type")).toContain("text/css");
       expect(await css.text()).toContain(
-        "/archive/www.runescape.com/img/banner.jpg",
+        "/assets/site/img/banner.jpg",
       );
       const image = await app.handle(
-        request("/archive/www.runescape.com/img/banner.jpg"),
+        request("/assets/site/img/banner.jpg"),
       );
       expect(image.status).toBe(200);
       expect((await image.arrayBuffer()).byteLength).toBe(3);
@@ -188,12 +188,12 @@ describe("archived website adapter", () => {
     expect(home).toContain('href="/forums"');
     expect(home).toContain('<span class="ts">Community</span>');
     expect(home).not.toContain('<span class="ts">News</span>');
-    expect(home).toContain('href="/archive/www.runescape.com/guide/page.html"');
+    expect(home).toContain('href="/guide/page"');
     expect(home).toContain(
-      'href="/archive/services.runescape.com/m%3dnews/story.html"',
+      'href="/news/history/story"',
     );
     expect(home).toContain("/site-overrides.css");
-    expect(home).toContain("/archive/www.runescape.com/css/global.css");
+    expect(home).toContain("/assets/site/css/global.css");
     expect(await site.renderHome("No news")).toContain(
       "Game world status is not configured",
     );
@@ -229,37 +229,37 @@ describe("archived website adapter", () => {
     expect(page).toContain('<input name="password">');
     expect(page).not.toContain("Old news");
   });
-  test("serves and rewrites CSS plus cross-host and directory HTML with a historical label", async () => {
+  test("serves integrated pages and rewrites CSS and cross-host assets", async () => {
     const { site } = await fixture();
     const css = await site.serve(
-      request("/archive/www.runescape.com/css/global.css"),
+      request("/assets/site/css/global.css"),
     );
     expect(css?.status).toBe(200);
     const text = await css!.text();
-    expect(text).toContain("/archive/www.runescape.com/img/banner.jpg");
-    expect(text).toContain("/archive/www.runescape.com/css/extra.css");
+    expect(text).toContain("/assets/site/img/banner.jpg");
+    expect(text).toContain("/assets/site/css/extra.css");
     expect(text).toContain(
-      "/archive/services.runescape.com/m%3dnews/picture.png",
+      "/assets/services/m%3Dnews/picture.png",
     );
     expect(text).not.toContain("tracker.invalid");
     const home = await site.serve(request("/archive/www.runescape.com/"));
-    expect(home?.status).toBe(200);
-    expect(await home!.text()).toContain("Historical website reference");
+    expect(home?.status).toBe(308);
+    expect(home!.headers.get('location')).toBe('/');
     const cross = await site.serve(
-      request("/archive/services.runescape.com/m%3dnews/story.html"),
+      request("/news/history/story"),
     );
     expect(cross?.status).toBe(200);
     expect(await cross!.text()).toContain("Cross-host news");
     const guide = await site.serve(
-      request("/archive/www.runescape.com/guide/page.html"),
+      request("/guide/page"),
     );
     expect(await guide!.text()).toContain(
-      'href="/archive/www.runescape.com/index.html"',
+      'href="/"',
     );
     expect(
       (
         await site.serve(
-          request("/archive/www.runescape.com/img/banner.jpg", "HEAD"),
+          request("/assets/site/img/banner.jpg", "HEAD"),
         )
       )?.body,
     ).toBeNull();
@@ -318,19 +318,44 @@ describe("archived website adapter", () => {
     );
     expect(html).toContain('id="bannerLogo"');
     expect(html).toContain('id="recentnews"');
-    expect(html).toContain("/archive/www.runescape.com/css/global-34.css");
+    expect(html).toContain("/assets/site/css/global-34.css");
     expect(html).toContain("Current local update");
     expect(html).not.toContain("104,681");
     expect(html).not.toContain("<script");
     const css = await site.serve(
-      request("/archive/www.runescape.com/css/global-34.css"),
+      request("/assets/site/css/global-34.css"),
     );
     expect(css?.status).toBe(200);
-    expect(await css!.text()).toContain("/archive/www.runescape.com/img/main/");
+    expect(await css!.text()).toContain("/assets/site/img/main/");
     const image = await site.serve(
-      request("/archive/www.runescape.com/img/main/home/bannerLogoc4ca.jpg"),
+      request("/assets/site/img/main/home/bannerLogoc4ca.jpg"),
     );
     expect(image?.status).toBe(200);
     expect((await image!.arrayBuffer()).byteLength).toBeGreaterThan(1000);
   });
+});
+
+test('native pages and assets replace source-domain URLs while legacy bookmarks redirect',async()=>{
+ const {root,host}=await fixture();
+ await mkdir(join(host,'kbase/guid'),{recursive:true});
+ await writeFile(join(host,'kbase/guid/Downloads_and_Wallpapers.html'),'<html><head><style>.art{background:url(../../img/banner.jpg)}</style></head><body><a href="manual.html#start">Guide</a><img src="../../img/banner.jpg"></body></html>');
+ await writeFile(join(host,'kbase/guid/manual.html'),'<html><body>Game guide</body></html>');
+ await writeFile(join(host,'kbase/guid/Foo_Bar.html'),'<html><body>Underscore guide</body></html>');
+ await writeFile(join(host,'kbase/guid/Foo-Bar.html'),'<html><body>Hyphen guide</body></html>');
+ await mkdir(join(root,'www.jagex.com/terms'),{recursive:true});
+ await writeFile(join(root,'www.jagex.com/terms/terms.html'),'<html><body>Original terms</body></html>');
+ await mkdir(join(host,'l=2/kbase/guid'),{recursive:true});
+ await writeFile(join(host,'l=2/kbase/guid/Example.html'),'<html><body>French guide</body></html>');
+ const site=(await ArchiveSite.load(root))!;
+ expect((await site.serve(request('/terms')))!.status).toBe(200);
+ expect((await site.serve(request('/archive/www.runescape.com/terms/terms.html')))!.headers.get('location')).toBe('/terms');
+ expect(await(await site.serve(request('/fr/guide/example')))!.text()).toContain('French guide');
+ const page=await site.serve(request('/downloads-and-wallpapers'));expect(page!.status).toBe(200);const html=await page!.text();
+ expect(html).toContain('href="/game-guide#start"');expect(html).toContain('/assets/site/img/banner.jpg');expect(html).not.toContain('/archive/');expect(html).not.toContain('Historical website reference');
+ const legacy=await site.serve(request('/archive/www.runescape.com/kbase/guid/Downloads_and_Wallpapers.html?view=all'));expect(legacy!.status).toBe(308);expect(legacy!.headers.get('location')).toBe('/downloads-and-wallpapers?view=all');
+ const asset=await site.serve(request('/archive/www.runescape.com/img/banner.jpg'));expect(asset!.status).toBe(308);expect(asset!.headers.get('location')).toBe('/assets/site/img/banner.jpg');
+ const collisions=site.nativePages().filter(p=>p.startsWith('/guide/foo-bar'));expect(collisions).toHaveLength(2);
+ const bodies=await Promise.all(collisions.map(async p=>(await site.serve(request(p)))!.text()));expect(bodies.some(b=>b.includes('Underscore guide'))).toBe(true);expect(bodies.some(b=>b.includes('Hyphen guide'))).toBe(true);
+ for(const route of site.nativePages())expect((await site.serve(request(route)))!.status).toBe(200);
+ for(const path of ['/assets/site/%2e%2e%2fsecret.html','/assets/site/config.html','/assets/unknown/img/banner.jpg'])expect((await site.serve(request(path)))!.status).toBe(404);
 });

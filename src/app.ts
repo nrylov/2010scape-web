@@ -121,6 +121,10 @@ export async function createApp(config: Config = {}) {
         return new Response(Bun.file(resolve(import.meta.dir, "../public/site-overrides.css")), {
           headers: { "Content-Type": "text/css", "X-Content-Type-Options": "nosniff" },
         });
+      if (archive && (req.method === "GET" || req.method === "HEAD")) {
+        const response = await archive.serve(req);
+        if (response) return response;
+      }
       const hiscoresResponse = await handleHiscores(req, archive);
       if (hiscoresResponse) return hiscoresResponse;
       const exchangeResponse = await handleExchange(req, archive);
@@ -129,15 +133,6 @@ export async function createApp(config: Config = {}) {
       if (forumResponse) return forumResponse;
       if (req.method === 'GET' && path === '/editor.js')
         return new Response(Bun.file(resolve(import.meta.dir,'../public/editor.js')), {headers:{'Content-Type':'text/javascript; charset=utf-8','X-Content-Type-Options':'nosniff'}});
-      if (req.method === 'GET') {
-        const decoded = decodeURIComponent(path);
-        if (/^\/archive\/services\.runescape\.com\/m=news\/list\.html$/.test(decoded)) return redirect('/news');
-        if (/^\/archive\/services\.runescape\.com\/m=devblog\/index\.html$/.test(decoded)) return redirect('/devblog');
-      }
-      if (archive && (req.method === "GET" || req.method === "HEAD")) {
-        const response = await archive.serve(req);
-        if (response) return response;
-      }
       if (req.method === "GET" && path === "/") {
         const rows = await store.list();
         if (archive) {

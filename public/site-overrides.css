@@ -243,6 +243,331 @@ body.site-app-page #right {
   .site-app-content .panel { padding: 12px; }
 }
 
+/* Fixed-width archive sections need their own mobile sizing. Keep the source
+   layout intact above the breakpoint and let wide data tables scroll locally. */
+@media (max-width: 780px) {
+  #head,
+  #headBg,
+  #headBoard,
+  #headOrangeTop,
+  #headOrangeBottom,
+  #headImage,
+  #headAdvert,
+  #headShort,
+  #bannerNoad,
+  #langAndLogin,
+  .navigation,
+  .navigation2,
+  .navigation3,
+  #content {
+    box-sizing: border-box;
+    width: calc(100% - 16px);
+    max-width: 766px;
+    min-width: 0;
+  }
+
+  #content {
+    height: auto;
+    overflow-wrap: anywhere;
+  }
+
+  #bannerNoad {
+    min-height: 86px;
+    height: auto;
+  }
+
+  #bannerNoad a {
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 100%;
+  }
+
+  #headImage img,
+  #content img,
+  #headAdvert img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  #content table {
+    max-width: 100%;
+  }
+
+  #content .kbase_content,
+  #content .kbase_content table,
+  #content .kbase_content td,
+  #content .kbase_content th {
+    box-sizing: border-box;
+    max-width: 100%;
+  }
+
+  #content .kbase_content table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  #content .table_back,
+  #content .top5_table,
+  #content .table_header,
+  #content .forum_table,
+  #content table.MoreNewsDevblog {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  #content .inner_wallpaper {
+    float: none;
+    display: inline-block;
+    vertical-align: top;
+    width: min(220px, 100%);
+    height: auto;
+    min-height: 270px;
+    box-sizing: border-box;
+  }
+
+  #content .wallpaper_links {
+    position: static;
+    width: auto;
+  }
+
+  #content form,
+  #content input:not([type="checkbox"]):not([type="radio"]),
+  #content select,
+  #content textarea {
+    box-sizing: border-box;
+    max-width: 100%;
+  }
+
+  #content input:not([type="checkbox"]):not([type="radio"]),
+  #content select,
+  #content textarea {
+    min-height: 40px;
+  }
+
+  #content #left,
+  #content #right {
+    float: none;
+    width: 100%;
+    min-width: 0;
+  }
+
+  #content #right { margin-top: 10px; }
+
+  .wallpaper,
+  .inner_wallpaper,
+  .downloads_item,
+  .files_item {
+    box-sizing: border-box;
+    max-width: 100%;
+  }
+
+  .wallpaper img,
+  .inner_wallpaper img,
+  .files_image_border {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .site-app-content .panel { padding: 10px; }
+  .site-app-content .section-heading { align-items: flex-start; }
+  .site-app-content .gold-button { max-width: 100%; white-space: normal; }
+}
+
+@media (max-width: 600px) {
+  #headShort #lang,
+  #langAndLogin #lang,
+  #langAndLogin #sessionText {
+    float: none;
+    display: block;
+    text-align: center;
+  }
+
+  #content .kbase_content { padding-inline: 8px; }
+  #content .kbase_content h1,
+  #content .kbase_content h2,
+  #content .kbase_content h3 { overflow-wrap: anywhere; }
+
+  #content .kbase_content table { margin-inline: 0; }
+
+  #content .section,
+  #content #article,
+  #content .kbase_content,
+  #content .downloads_info {
+    box-sizing: border-box;
+    max-width: 100%;
+  }
+
+  #content .downloads_content,
+  #content .downloads_title { overflow-wrap: anywhere; }
+
+  #content .anchors {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px;
+    width: 100%;
+    max-width: 100%;
+    margin-inline: auto;
+  }
+
+  #content a.downloadsAnchor {
+    float: none;
+    display: flex;
+    align-items: center;
+    background-size: 100% auto;
+    background-position: center;
+    background-repeat: no-repeat;
+    flex: 0 1 calc(50% - 3px);
+    width: auto;
+    max-width: 209px;
+    min-height: 40px;
+    height: auto;
+    margin: 0;
+  }
+
+  #content a.downloadsAnchor img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  #content .downloads_text_wrapper {
+    float: none;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    box-sizing: border-box;
+  }
+
+  #content .kbase_content p,
+  #content .kbase_content li { line-height: 1.5; }
+
+  .site-app-content h1 { font-size: 23px; }
+  .site-app-content h2 { font-size: 19px; }
+  .site-app-content .panel { padding: 9px; border-width: 3px; }
+
+  /* Several guide illustrations are wrapped in fixed 410px image frames. */
+  #content .imgcentre,
+  #content .centrecontainer,
+  #content .topbord,
+  #content .bottombord,
+  #content .leftbord,
+  #content .rightbord {
+    box-sizing: border-box;
+    width: 100% !important;
+    max-width: 100%;
+  }
+
+  #content .imgcentre img,
+  #content .centrecontainer img,
+  #content .topbord img,
+  #content .bottombord img,
+  #content .leftbord img,
+  #content .rightbord img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Stack the fixed 2010 hiscores panels; preserve only the wide score table
+     as a local horizontal scroller. */
+  #hiscores_background #skillsList_back,
+  #hiscores_background #modeSelect_back,
+  #hiscores_background #playerList_back,
+  #hiscores_background #search_back {
+    box-sizing: border-box;
+    float: none;
+    width: 100% !important;
+    max-width: 100%;
+    height: auto;
+    min-width: 0;
+    margin: 0 0 8px;
+  }
+
+  #hiscores_background #skillsList ul {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px 6px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  #hiscores_background #skillsList ul li {
+    box-sizing: border-box;
+    min-width: 0;
+    margin: 0;
+  }
+
+  #hiscores_background #skillsList ul li a {
+    box-sizing: border-box;
+    min-width: 0;
+    padding: 5px 3px 5px 25px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  #hiscores_background #modeSelect_back .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+  }
+
+  #hiscores_background #modeSelect_back .buttons a {
+    box-sizing: border-box;
+    position: relative;
+    left: auto !important;
+    top: auto !important;
+    flex: 1 1 135px;
+    width: auto;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0;
+  }
+
+  #hiscores_background #modeSelect_back .buttons a span {
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  #hiscores_background #playerList_back .table_back {
+    display: block;
+    float: none;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  #hiscores_background #search_back .search_small,
+  #hiscores_background #search_back .search_large {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    min-height: 82px;
+    padding: 8px;
+  }
+
+  #hiscores_background #search_back .text {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+@media (min-width: 480px) and (max-width: 600px) {
+  #hiscores_background #skillsList ul {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 /* The historical guide/news pages use the same chrome with wider article tables. */
 @media (max-width: 780px) {
   #headBoard, #headOrangeTop, #headOrangeBottom, #headImage, #headAdvert,
@@ -321,3 +646,35 @@ body.site-app-page #right {
 .editorial-editor textarea[name="summary"] { min-height:70px; }
 .exchange-page #ticker{height:auto;min-height:24px;padding:5px;box-sizing:border-box}.exchange-page .exchange-graph{max-width:100%;height:auto}.exchange-page #item_graph_image{max-width:100%}
 @media(max-width:780px){.exchange-page #browsebox{display:none}.exchange-page .main_ge_page{width:100%;float:none;box-sizing:border-box}.exchange-page #item_graph_image{width:100%;table-layout:fixed}.exchange-page #item_graph_image td{padding:0}.exchange-page #legend{float:none;width:auto}.exchange-page #item_graph_nav{width:auto}.exchange-page #searchbox{height:auto}.exchange-page #item_additional .spaced_span{display:inline-block;margin:6px}}
+
+@media (max-width: 600px) {
+  /* Keep the original one-line plaque artwork; full article titles remain in the body. */
+  #content h1.plaque, #content .sectionHeader h1.plaque {
+    box-sizing:border-box;height:26px;min-height:26px;line-height:26px;
+    padding:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+
+  .navigation,
+  .navigation2,
+  .navigation3 {
+    height: auto;
+    min-height: 24px;
+    padding-block: 5px;
+    line-height: 1.4;
+    overflow: visible;
+  }
+
+  .navigation .location,
+  .navigation2 .location,
+  .navigation3 .location {
+    display: block;
+    height: auto;
+    min-height: 14px;
+    line-height: 1.4;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+@media(max-width:600px){
+  .navigation .location,.navigation2 .location,.navigation3 .location{background:#000;padding:4px;box-sizing:border-box;min-height:24px}
+}

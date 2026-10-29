@@ -4,7 +4,7 @@ import { moderator, type ForumActor, type ForumBoard, type ForumCategory, type F
 
 export const escape = (value: unknown) => String(value ?? "").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export const when = (time: number | null | undefined) => time ? new Date(Number(time)).toLocaleString("en-GB",{timeZone:"UTC",day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}) + " UTC" : "—";
-const asset = (path: string) => "/archive/www.runescape.com/img/forum/" + path;
+const asset = (path: string) => "/assets/site/img/forum/" + path;
 const csrf = (actor: ForumActor) => `<input type="hidden" name="csrf" value="${escape(actor.csrf)}">`;
 export const form = (actor: ForumActor, action: string, content: string, className = "forum-action") => `<form class="${className}" method="post" action="${escape(action)}">${csrf(actor)}${content}</form>`;
 const button = (text: string, value = "") => `<button class="buttonsmall" type="submit"${value ? ` name="action" value="${escape(value)}"` : ""}>${escape(text)}</button>`;
@@ -42,10 +42,10 @@ export async function renderForum(archive: ArchiveSite|undefined, page: ForumPag
   const account = page.actor ? `<span>Logged in as <b>${escape(page.actor.name)}</b></span> · <a href="/admin">Account</a>${moderator(page.actor)?' · <a href="/forums/moderation">Moderation</a>':""}` : `<a href="${escape(login)}">Administrator login</a> to post.`;
   const picker = `<div class="forum-account">${account}</div><form class="forum-search" method="get" action="/forums/search"><label>Search Threads <input class="textinput" name="q" maxlength="100" value="${escape(page.query??"")}"></label> <button class="buttonsmall" type="submit">Search</button></form>`;
   const nav = `<b>Location:</b> <a href="/">Home</a> &gt; <a href="/forums">2010scape Forums</a>${(page.breadcrumbs??[]).map(c=>` &gt; <a href="${escape(c.href)}">${escape(c.title)}</a>`).join("")}`;
-  if (!template) return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(page.title)} - 2010scape Forums</title><link rel="stylesheet" href="/forum.css"><script src="/editor.js" defer></script></head><body class="forum-app"><nav>${nav}</nav><main><h1>${escape(page.title)}</h1>${picker}${page.controls??""}${page.body}${page.footer??""}</main></body></html>`;
+  if (!template) return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(page.title)} - 2010scape Forums</title><link rel="stylesheet" href="/forum.css?v=responsive-1"><script src="/editor.js" defer></script></head><body class="forum-app"><nav>${nav}</nav><main><h1>${escape(page.title)}</h1>${picker}${page.controls??""}${page.body}${page.footer??""}</main></body></html>`;
   const rewriter = new HTMLRewriter()
     .on("title",{element(e){e.setInnerContent(escape(page.title)+" - 2010scape Forums",{html:true});}})
-    .on("head",{element(e){e.append('<link rel="stylesheet" href="/forum.css"><script src="/editor.js" defer></script>',{html:true});}})
+    .on("head",{element(e){e.append('<link rel="stylesheet" href="/forum.css?v=responsive-1"><script src="/editor.js" defer></script>',{html:true});}})
     .on("body",{element(e){e.setAttribute("class",((e.getAttribute("class")??"")+" forum-app").trim());}})
     .on("h1.plaque",{element(e){e.setInnerContent(escape(page.title),{html:true});}})
     .on("#location, .location",{element(e){e.setInnerContent(nav,{html:true});}})

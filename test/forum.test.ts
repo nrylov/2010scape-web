@@ -110,7 +110,7 @@ test("forum: templates keep original forum containers/assets while old posts and
   const id=await f.create();
   for(const path of ["/forums","/forums/boards/general",`/forums/threads/${id}`]) {
     const source=await (await f.get(path,"alice"))!.text();
-    expect(source).toContain("Original footer");expect(source).toContain('class="forum-app"');expect(source).toContain('/archive/www.runescape.com/css/forum.css');expect(source).not.toContain("<script>");expect(source).not.toContain("372 historical active users");
+    expect(source).toContain("Original footer");expect(source).toContain('class="forum-app"');expect(source).toContain('/assets/site/css/forum.css');expect(source).not.toContain("<script>");expect(source).not.toContain("372 historical active users");
   }
   const thread=await (await f.get(`/forums/threads/${id}`,"alice"))!.text();expect(thread).toContain('class="message"');expect(thread).not.toContain("Old private posts");expect(thread).toContain('name="csrf"');expect(thread).not.toContain('action="https://old.invalid"');
   expect((await f.get("/forum.css"))!.headers.get("content-type")).toContain("text/css");

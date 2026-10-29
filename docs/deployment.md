@@ -128,3 +128,14 @@ original filter form and native filter controls. After the owner enabled macOS
 Local Network access, host HTTP and in-app browser access by Service IP worked;
 the browser's service-hostname DNS lookup remained unavailable. The deployed
 blog has no published developer posts; preview articles were not production data.
+
+## Native pages and mobile layouts
+
+Image `2010scape-web:website-20261028-4` incorporates captured pages under native
+site paths and assets under `/assets/...`, with 308 redirects from legacy archive
+URLs. It also adds the verified phone-layout rules described in
+[native pages and mobile](native-pages-and-mobile.md). Source archives remain
+outside the image. Local validation passed TypeScript and all 41 website tests;
+the captured inventory audit passed all 13,530 native page routes, and browser
+checks covered 16 page types at 320/390/600px with no document-wide overflow or
+missing images. The existing progress blog and database are preserved.

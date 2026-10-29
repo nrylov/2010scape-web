@@ -13,3 +13,5 @@ This repository contains the TypeScript website for 2010scape. Use the actual or
 
 - `/grand-exchange` and `/hiscores` use original templates with labeled contrived data behind `PriceHistorySource` and `HiscoresProvider`. Live GE/history ingestion and hiscores data are deferred; see `docs/market-and-hiscores.md`.
 - Devblog filtering must replace the archived `form#filter` completely; do not inject another form inside it or preserve the archive sanitizer's inert/disabled state. Preserve original filter IDs and button art.
+
+- All captured pages/assets must use native routes from `src/site-routes.ts`; old `/archive/...` paths are compatibility redirects only. Preserve original assets and traversal/symlink protections. Run `bun scripts/audit-native-routes.ts` for the full captured-page inventory. Phone layouts were checked across 16 pages at 320/390/600px; see `docs/native-pages-and-mobile.md`.

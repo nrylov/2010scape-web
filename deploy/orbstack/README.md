@@ -51,3 +51,5 @@ This hostPath setup is intentionally for a single-node local OrbStack cluster. U
 Validation on OrbStack: original homepage, guide, CSS and images returned HTTP200; authentication, CSRF, draft/publication controls, 32 readiness probes interleaved with authenticated reads, web-pod replacement, PostgreSQL outage and PVC-backed recovery all passed. No temporary announcements remain. The deployed website also reported the separately deployed game Service online.
 
 Current website milestone: `2010scape-web:website-20261028-2` (2026-10-28). Publishing/forum persistence verification passed, along with GE/hiscores public-route checks. Only the website/PostgreSQL test pods were replaced; the game world was untouched. GE and hiscores show labeled contrived data. Player authentication remains deferred.
+
+Native-page/mobile milestone: `2010scape-web:website-20261028-4`. Captured content now uses native site routes, legacy URLs redirect, and responsive checks cover the main page families. See `docs/native-pages-and-mobile.md`.

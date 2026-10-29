@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { ArchiveSite } from "../src/archive";
 import { handleHiscores, HISCORE_SKILLS, sampleHiscores, type HiscoresProvider } from "../src/hiscores";
 
-const template = `<!doctype html><html><head><title>Old Hiscores</title></head><body><div class="navigation"><div class="location">Old location</div></div><h1 class="plaque">RuneScape Hiscores</h1><div id="hiscores_background"><div id="skillsList_back"><div id="skillsList"><ul><li>Old skill</li></ul></div></div><div id="modeSelect_back"><div class="buttons">Old tabs</div></div><div id="playerList_back"><div id="scores_head">Old rows</div><table class="table_back"></table></div><div id="search_back">Old search</div></div><div id="footer"><a class="jagexlink"><img src="/archive/www.runescape.com/img/main/layout/jagex.png"></a></div></body></html>`;
+const template = `<!doctype html><html><head><title>Old Hiscores</title></head><body><div class="navigation"><div class="location">Old location</div></div><h1 class="plaque">RuneScape Hiscores</h1><div id="hiscores_background"><div id="skillsList_back"><div id="skillsList"><ul><li>Old skill</li></ul></div></div><div id="modeSelect_back"><div class="buttons">Old tabs</div></div><div id="playerList_back"><div id="scores_head">Old rows</div><table class="table_back"></table></div><div id="search_back">Old search</div></div><div id="footer"><a class="jagexlink"><img src="/assets/site/img/main/layout/jagex.png"></a></div></body></html>`;
 const archive = { async template(host: string, path: string) { expect(host).toBe("services.runescape.com"); expect(path).toBe("m=hiscore/hiscores.html"); return template; } } as Pick<ArchiveSite, "template">;
 const request = (path: string, method = "GET") => new Request("http://localhost" + path, { method });
 const fixture: HiscoresProvider = {
@@ -30,8 +30,8 @@ describe("original 2010 Hiscores", () => {
     expect(html).toContain('href="/hiscores/player/Sample1"');
     expect(html).toContain('id="button-down" href="/hiscores?skill=attack&amp;page=2"');
     expect(html).toContain('<div class="hiscores-pagination-label" style="clear:both;text-align:center">Page 1 of 2</div>');
-    expect(html).toContain('src="/archive/www.runescape.com/img/main/layout/jagexc20a.png"');
-    expect(html).not.toContain('src="/archive/www.runescape.com/img/main/layout/jagex.png"');
+    expect(html).toContain('src="/assets/site/img/main/layout/jagexc20a.png"');
+    expect(html).not.toContain('src="/assets/site/img/main/layout/jagex.png"');
     expect(html).not.toContain("Old rows");
     expect(html).toContain('class="table_back"');
   });
